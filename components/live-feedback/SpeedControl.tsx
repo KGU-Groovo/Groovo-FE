@@ -1,28 +1,60 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+interface SpeedControlProps {
+  selectedSpeed: number;
+  onSpeedChange: (speed: number) => void;
+  onInteractionStart?: () => void;
+  onInteractionEnd?: () => void;
+}
+
 const speeds = [0.5, 1.0, 1.5, 2.0];
 
-export default function SpeedControl() {
-  const [selectedSpeed, setSelectedSpeed] = useState(1.0);
-
+export default function SpeedControl({
+  selectedSpeed,
+  onSpeedChange,
+  onInteractionStart,
+  onInteractionEnd,
+}: SpeedControlProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
   return (
     <View style={styles.container}>
       <Text style={styles.header}>SPEED</Text>
-      {speeds.map((speed) => {
-        const isSelected = speed === selectedSpeed;
-        return (
-          <TouchableOpacity
-            key={speed}
-            style={[styles.speedOption, isSelected && styles.selectedOption]}
-            onPress={() => setSelectedSpeed(speed)}
-          >
-            <Text style={[styles.speedText, isSelected && styles.selectedText]}>
-              {speed.toFixed(1)}x
-            </Text>
-          </TouchableOpacity>
-        );
-      })}
+      {isExpanded ? (
+        speeds.map((speed) => {
+          const isSelected = speed === selectedSpeed;
+          return (
+            <TouchableOpacity
+              key={speed}
+              style={[styles.speedOption, isSelected && styles.selectedOption]}
+              onPress={() => {
+                onSpeedChange?.(speed);
+                setIsExpanded(false);
+                onInteractionEnd?.();
+              }}
+              onPressIn={onInteractionStart}
+              onPressOut={onInteractionEnd}
+            >
+              <Text style={[styles.speedText, isSelected && styles.selectedText]}>
+                {speed.toFixed(1)}x
+              </Text>
+            </TouchableOpacity>
+          );
+        })
+      ) : (
+        <TouchableOpacity
+          style={[styles.speedOption, styles.selectedOption]}
+          onPress={() => {
+            setIsExpanded(true);
+            onInteractionStart?.();
+          }}
+          onPressOut={onInteractionEnd}
+        >
+          <Text style={[styles.speedText, styles.selectedText]}>
+            {selectedSpeed.toFixed(1)}x
+          </Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }

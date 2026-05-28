@@ -9,8 +9,25 @@ import SpeedControl from "../../components/live-feedback/SpeedControl";
 export default function LiveFeedback() {
   const { hasPermission, requestPermission } = useCameraPermission();
   const [showControls, setShowControls] = useState(false);
+  const [selectedSpeed, setSelectedSpeed] = useState(1.0);
   const [landmarksData, setLandmarksData] = useState<any>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clear any existing hide timer
+  const resetHideTimer = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  };
+
+  // Start/restart a timer to hide controls after 3 seconds of inactivity
+  const scheduleHideTimer = () => {
+    resetHideTimer();
+    timerRef.current = setTimeout(() => {
+      setShowControls(false);
+    }, 3000);
+  };
   const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
   const handlePoseLandmarks = (landmarks: any) => {
@@ -157,7 +174,12 @@ export default function LiveFeedback() {
 
             {showControls && (
               <View pointerEvents="box-none" style={styles.controls}>
-                <SpeedControl />
+                <SpeedControl
+          selectedSpeed={selectedSpeed}
+          onSpeedChange={setSelectedSpeed}
+          onInteractionStart={resetHideTimer}
+          onInteractionEnd={scheduleHideTimer}
+        />
                 <MediaControls />
               </View>
             )}
