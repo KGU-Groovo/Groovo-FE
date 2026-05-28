@@ -1,13 +1,21 @@
-import MediaControls from "@/components/live-feedback/MediaControls";
-import { CameraType, CameraView, useCameraPermissions } from 'expo-camera';
+import { RNMediapipe } from '@thinksys/react-native-mediapipe';
 import { useEffect, useRef, useState } from 'react';
-import { Button, ImageBackground, Pressable, StyleSheet, Text, View } from "react-native";
+import { Button, Dimensions, ImageBackground, Pressable, StyleSheet, Text, View } from "react-native";
+import { ScreenCornerRadius } from "react-native-screen-corner-radius";
+import { useCameraPermission } from 'react-native-vision-camera';
+import MediaControls from "../../components/live-feedback/MediaControls";
+import SpeedControl from "../../components/live-feedback/SpeedControl";
 
 export default function LiveFeedback() {
-  const [facing, setFacing] = useState<CameraType>('back');
-  const [permission, requestPermission] = useCameraPermissions();
+  const { hasPermission, requestPermission } = useCameraPermission();
   const [showControls, setShowControls] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+  const handlePoseLandmarks = (landmarks: any) => {
+    // 실시간으로 33개의 body landmark 좌표(x, y, z)가 배열 형태로 들어옵니다.
+    console.log('Detected landmarks:', landmarks);
+  };
 
   useEffect(() => {
     return () => {
@@ -28,12 +36,7 @@ export default function LiveFeedback() {
     }
   };
 
-  if (!permission) {
-    // Camera permissions are still loading.
-    return <View />;
-  }
-
-  if (!permission.granted) {
+  if (!hasPermission) {
     // Camera permissions are not granted yet.
     return (
       <View style={styles.container}>
@@ -46,21 +49,33 @@ export default function LiveFeedback() {
   return (
     <View style={styles.container}>
       <View style={styles.wrapper}>
-        <ImageBackground
-          source={require("../../assets/images/Ghost-Dancer.png")}
-          style={styles.background_dance}
-        >
-          <View style={styles.background_dance_mask} />
-          <CameraView style={styles.camera} facing={facing} />
+        <View style={{ borderRadius: ScreenCornerRadius, overflow: "hidden", flex: 1 }}>
+          <ImageBackground
+            source={require("../../assets/images/Ghost-Dancer.png")}
+            style={styles.background_dance}
+          >
+            <View style={styles.background_dance_mask} />
+            <RNMediapipe
+              width={SCREEN_WIDTH}
+              height={SCREEN_HEIGHT}
+              face={true}        // 얼굴 포인트 포함 여부
+              torso={true}       // 상체 포인트 포함 여부
+              leftArm={true}
+              rightArm={true}
+              onLandmark={handlePoseLandmarks}
+            />
 
-          <Pressable style={StyleSheet.absoluteFillObject} onPress={handlePress} />
+            <Pressable style={styles.overlay} onPress={handlePress} />
 
-          {showControls && (
-            <View pointerEvents="box-none" style={StyleSheet.absoluteFillObject}>
-              <MediaControls />
-            </View>
-          )}
-        </ImageBackground>
+            {showControls && (
+              <View pointerEvents="box-none" style={styles.controls}>
+                <SpeedControl />
+                <MediaControls />
+              </View>
+            )}
+          </ImageBackground>
+
+        </View>
       </View>
     </View>
   );
@@ -75,13 +90,15 @@ const styles = StyleSheet.create({
   wrapper: {
     width: "100%",
     height: "100%",
+    backgroundColor: "red",
+    padding: 8,
   },
   background_dance_mask: {
     position: "absolute",
     width: "100%",
     height: "100%",
     backgroundColor: "black",
-    opacity: 0.6,
+    opacity: 0.05,
   },
   background_dance: {
     width: "100%",
@@ -96,5 +113,15 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
     opacity: 0.65,
+  },
+  overlay: {
+    position: "absolute",
+    width: "100%",
+    height: "100%",
+  },
+  controls: {
+    position: "absolute",
+    width: "100%",
+    height: "100%",
   },
 });
