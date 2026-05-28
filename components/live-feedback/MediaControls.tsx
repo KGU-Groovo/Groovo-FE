@@ -27,12 +27,6 @@ export default function MediaControls({
   onRepeatStartChange,
   onRepeatEndChange,
 }: MediaControlsProps) {
-  // Props will be passed from parent component
-  //   isPlaying, progress, repeatStart, repeatEnd, isRepeatEnabled
-  //   onPlayPause, onProgressChange, onRepeatToggle, onRepeatStartChange, onRepeatEndChange
-  //   onInteractionStart, onInteractionEnd for hide timer handling
-  //   These are defined in the component's props (see prop types below).
-
   const timelineWidth = useRef(0);
   const [isDraggingProgress, setIsDraggingProgress] = useState(false);
   const [isDraggingLeft, setIsDraggingLeft] = useState(false);
@@ -216,15 +210,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: "center",
   },
-  timeline_background: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    width: "100%",
-    height: "100%",
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderRadius: 3,
-  },
   timeline_progress: {
     position: "absolute",
     left: 0,
@@ -300,30 +285,11 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   timeline_handle_dragging: { opacity: 0.7 },
-  timeline_end_segment: {
-    position: "absolute",
-    right: 0,
-    top: 0,
-    width: "20%",
-    height: "100%",
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    borderRadius: 3,
-  },
   playback_controls: {
     flexDirection: "row",
     justifyContent: "space-around",
     alignItems: "center",
     paddingHorizontal: 20,
-  },
-  control_button_container: {
-    padding: 8,
-    borderRadius: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-  },
-  control_button: {
-    fontSize: 28,
-    color: "#ffffff",
-    opacity: 0.8,
   },
   play_button_container: {
     width: 72,
@@ -340,10 +306,5 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.4,
     shadowRadius: 8,
     elevation: 8,
-  },
-  play_button: {
-    fontSize: 28,
-    color: "#ffffff",
-    fontWeight: "600",
   },
 });

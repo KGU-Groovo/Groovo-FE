@@ -12,13 +12,12 @@ export default function LiveFeedback() {
   const [showControls, setShowControls] = useState(false);
   const [selectedSpeed, setSelectedSpeed] = useState(1.0);
   const [landmarksData, setLandmarksData] = useState<any>(null);
-  // Media control state lifted from MediaControls component
   const [isPlaying, setIsPlaying] = useState(true);
   const [progress, setProgress] = useState(0);
   const [repeatStart, setRepeatStart] = useState(0);
   const [repeatEnd, setRepeatEnd] = useState(1);
   const [isRepeatEnabled, setIsRepeatEnabled] = useState(false);
-  // Callbacks for MediaControls
+
   const handlePlayPause = (newPlaying: boolean) => setIsPlaying(newPlaying);
   const handleProgressChange = useCallback((newProgress: number) => setProgress(newProgress), []);
   const handleRepeatToggle = (enabled: boolean) => setIsRepeatEnabled(enabled);
@@ -26,8 +25,8 @@ export default function LiveFeedback() {
   const handleRepeatEndChange = (value: number) => setRepeatEnd(value);
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-  // Clear any existing hide timer
   const resetHideTimer = () => {
     if (timerRef.current) {
       clearTimeout(timerRef.current);
@@ -35,17 +34,22 @@ export default function LiveFeedback() {
     }
   };
 
-  // Start/restart a timer to hide controls after 3 seconds of inactivity
   const scheduleHideTimer = () => {
     resetHideTimer();
-    timerRef.current = setTimeout(() => {
-      setShowControls(false);
-    }, 3000);
+    timerRef.current = setTimeout(() => setShowControls(false), 3000);
   };
-  const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+  const handlePress = () => {
+    if (showControls) {
+      setShowControls(false);
+      resetHideTimer();
+    } else {
+      setShowControls(true);
+      scheduleHideTimer();
+    }
+  };
 
   const handlePoseLandmarks = (landmarks: any) => {
-    // 실시간으로 33개의 body landmark 좌표(x, y, z)가 배열 형태로 들어옵니다.
     setLandmarksData(landmarks);
   };
 
@@ -53,7 +57,6 @@ export default function LiveFeedback() {
     if (!landmarksData) return null;
 
     let points: any[] = [];
-    // RNMediapipe에서 전달되는 landmarks의 형태에 따라 유연하게 파싱
     if (Array.isArray(landmarksData)) {
       points = landmarksData;
     } else if (landmarksData?.landmarks && Array.isArray(landmarksData.landmarks)) {
@@ -82,50 +85,15 @@ export default function LiveFeedback() {
       const originalY = point.y.toFixed(2);
       const originalZ = point.z !== undefined && point.z !== null ? point.z.toFixed(2) : '0.00';
 
-      // Mediapipe는 기본적으로 0~1 사이의 normalized coordinate를 반환합니다.
-      // 값이 2보다 작다면 정규화된 좌표로 간주하여 디바이스 크기에 맞게 변환합니다.
       if (Math.abs(x) <= 2 && Math.abs(y) <= 2) {
         x = x * SCREEN_WIDTH;
         y = y * SCREEN_HEIGHT;
       }
 
       return (
-        <View
-          key={index}
-          style={{
-            position: 'absolute',
-            left: x,
-            top: y,
-            zIndex: 100,
-          }}
-        >
-          {/* 랜드마크 점 */}
-          <View
-            style={{
-              position: 'absolute',
-              left: -4, // 점의 중앙을 좌표에 맞춤
-              top: -4,
-              width: 8,
-              height: 8,
-              borderRadius: 4,
-              backgroundColor: '#00FF00', // 연두색
-              borderWidth: 1,
-              borderColor: '#000000',
-            }}
-          />
-          {/* 랜드마크 수치 정보 텍스트 */}
-          <Text
-            style={{
-              color: '#FFFFFF',
-              fontSize: 8,
-              backgroundColor: 'rgba(0, 0, 0, 0.6)',
-              padding: 2,
-              marginLeft: 6,
-              marginTop: -6,
-              borderRadius: 2,
-              overflow: 'hidden',
-            }}
-          >
+        <View key={index} style={[styles.landmark_container, { left: x, top: y }]}>
+          <View style={styles.landmark_dot} />
+          <Text style={styles.landmark_text}>
             {`${index} (${originalX}, ${originalY}, ${originalZ})`}
           </Text>
         </View>
@@ -139,21 +107,7 @@ export default function LiveFeedback() {
     };
   }, []);
 
-  const handlePress = () => {
-    if (showControls) {
-      setShowControls(false);
-      if (timerRef.current) clearTimeout(timerRef.current);
-    } else {
-      setShowControls(true);
-      if (timerRef.current) clearTimeout(timerRef.current);
-      timerRef.current = setTimeout(() => {
-        setShowControls(false);
-      }, 3000);
-    }
-  };
-
   if (!hasPermission) {
-    // Camera permissions are not granted yet.
     return (
       <View style={styles.container}>
         <Text style={styles.message}>We need your permission to show the camera</Text>
@@ -165,55 +119,49 @@ export default function LiveFeedback() {
   return (
     <View style={styles.container}>
       <View style={styles.wrapper}>
-        <View style={{ borderRadius: ScreenCornerRadius - 8, overflow: "hidden", flex: 1 }}>
+        <View style={{ borderRadius: ScreenCornerRadius - 8, overflow: "hidden", flex: 1, backgroundColor: 'black' }}>
           <VideoBackground
             source={require("../../assets/videos/HeartsToHearts_style.mp4")}
-            style={styles.background_dance}
+            style={styles.video}
             isPlaying={isPlaying}
             playbackRate={selectedSpeed}
             progress={progress}
             onProgressUpdate={handleProgressChange}
-          >
-            <View style={styles.background_dance_mask} />
-            <RNMediapipe
-              width={SCREEN_WIDTH}
-              height={SCREEN_HEIGHT}
-              face={true}        // 얼굴 포인트 포함 여부
-              torso={true}       // 상체 포인트 포함 여부
-              leftArm={true}
-              rightArm={true}
-              onLandmark={handlePoseLandmarks}
-              style={styles.camera}
-            />
-
-            {renderLandmarks()}
-
-            <Pressable style={styles.overlay} onPress={handlePress} />
-
-            {showControls && (
-              <View pointerEvents="box-none" style={styles.controls}>
-                <SpeedControl
-                  selectedSpeed={selectedSpeed}
-                  onSpeedChange={setSelectedSpeed}
-                  onInteractionStart={resetHideTimer}
-                  onInteractionEnd={scheduleHideTimer}
-                />
-                <MediaControls
-                  isPlaying={isPlaying}
-                  progress={progress}
-                  repeatStart={repeatStart}
-                  repeatEnd={repeatEnd}
-                  isRepeatEnabled={isRepeatEnabled}
-                  onPlayPause={handlePlayPause}
-                  onProgressChange={handleProgressChange}
-                  onRepeatToggle={handleRepeatToggle}
-                  onRepeatStartChange={handleRepeatStartChange}
-                  onRepeatEndChange={handleRepeatEndChange}
-                />
-              </View>
-            )}
-          </VideoBackground>
-
+          />
+          <RNMediapipe
+            width={SCREEN_WIDTH}
+            height={SCREEN_HEIGHT}
+            face={true}
+            torso={true}
+            leftArm={true}
+            rightArm={true}
+            onLandmark={handlePoseLandmarks}
+            style={styles.camera}
+          />
+          {renderLandmarks()}
+          <Pressable style={styles.overlay} onPress={handlePress} />
+          {showControls && (
+            <View pointerEvents="box-none" style={styles.controls}>
+              <SpeedControl
+                selectedSpeed={selectedSpeed}
+                onSpeedChange={setSelectedSpeed}
+                onInteractionStart={resetHideTimer}
+                onInteractionEnd={scheduleHideTimer}
+              />
+              <MediaControls
+                isPlaying={isPlaying}
+                progress={progress}
+                repeatStart={repeatStart}
+                repeatEnd={repeatEnd}
+                isRepeatEnabled={isRepeatEnabled}
+                onPlayPause={handlePlayPause}
+                onProgressChange={handleProgressChange}
+                onRepeatToggle={handleRepeatToggle}
+                onRepeatStartChange={handleRepeatStartChange}
+                onRepeatEndChange={handleRepeatEndChange}
+              />
+            </View>
+          )}
         </View>
       </View>
     </View>
@@ -232,23 +180,17 @@ const styles = StyleSheet.create({
     backgroundColor: "red",
     padding: 8,
   },
-  background_dance_mask: {
-    position: "absolute",
+  camera: {
     width: "100%",
     height: "100%",
-    backgroundColor: "black",
-    opacity: 0,
+    opacity: 0.65,
   },
-  background_dance: {
-    width: "100%",
-    height: "100%",
+  video: {
+    ...StyleSheet.absoluteFillObject,
   },
   message: {
     textAlign: "center",
     paddingBottom: 10,
-  },
-  camera: {
-    opacity: 0.6,
   },
   overlay: {
     position: "absolute",
@@ -259,5 +201,30 @@ const styles = StyleSheet.create({
     position: "absolute",
     width: "100%",
     height: "100%",
+  },
+  landmark_container: {
+    position: 'absolute',
+    zIndex: 100,
+  },
+  landmark_dot: {
+    position: 'absolute',
+    left: -4,
+    top: -4,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#00FF00',
+    borderWidth: 1,
+    borderColor: '#000000',
+  },
+  landmark_text: {
+    color: '#FFFFFF',
+    fontSize: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    padding: 2,
+    marginLeft: 6,
+    marginTop: -6,
+    borderRadius: 2,
+    overflow: 'hidden',
   },
 });
