@@ -134,7 +134,7 @@ export default function LiveFeedback() {
   return (
     <View style={styles.container}>
       <View style={styles.wrapper}>
-        <View style={{ borderRadius: ScreenCornerRadius, overflow: "hidden", flex: 1 }}>
+        <View style={{ borderRadius: ScreenCornerRadius - 8, overflow: "hidden", flex: 1 }}>
           <ImageBackground
             source={require("../../assets/images/Ghost-Dancer.png")}
             style={styles.background_dance}
