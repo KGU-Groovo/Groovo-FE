@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
     backgroundColor: "black",
-    opacity: 0.05,
+    opacity: 0,
   },
   background_dance: {
     width: "100%",
@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   camera: {
-    opacity: 0.9,
+    opacity: 0.6,
   },
   overlay: {
     position: "absolute",
