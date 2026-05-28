@@ -1,15 +1,16 @@
 {
   "expo": {
-    "name": "Groovo-FE",
-    "slug": "Groovo-FE",
+    "name": "Groovo",
+    "slug": "Groovo",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/Groovo_icon.png",
     "scheme": "groovofe",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.anonymous.Groovo-FE"
     },
     "android": {
       "adaptiveIcon": {
@@ -19,7 +20,8 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.anonymous.GroovoFE"
     },
     "web": {
       "output": "static",
