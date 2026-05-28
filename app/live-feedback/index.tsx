@@ -9,12 +9,97 @@ import SpeedControl from "../../components/live-feedback/SpeedControl";
 export default function LiveFeedback() {
   const { hasPermission, requestPermission } = useCameraPermission();
   const [showControls, setShowControls] = useState(false);
+  const [landmarksData, setLandmarksData] = useState<any>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
   const handlePoseLandmarks = (landmarks: any) => {
     // 실시간으로 33개의 body landmark 좌표(x, y, z)가 배열 형태로 들어옵니다.
-    console.log('Detected landmarks:', landmarks);
+    setLandmarksData(landmarks);
+  };
+
+  const renderLandmarks = () => {
+    if (!landmarksData) return null;
+
+    let points: any[] = [];
+    // RNMediapipe에서 전달되는 landmarks의 형태에 따라 유연하게 파싱
+    if (Array.isArray(landmarksData)) {
+      points = landmarksData;
+    } else if (landmarksData?.landmarks && Array.isArray(landmarksData.landmarks)) {
+      points = landmarksData.landmarks;
+    } else if (typeof landmarksData === 'string') {
+      try {
+        const parsed = JSON.parse(landmarksData);
+        points = Array.isArray(parsed) ? parsed : parsed?.landmarks || [];
+      } catch (e) { }
+    } else if (landmarksData?.result) {
+      try {
+        const parsed = typeof landmarksData.result === 'string' ? JSON.parse(landmarksData.result) : landmarksData.result;
+        points = Array.isArray(parsed) ? parsed : parsed?.landmarks || [];
+      } catch (e) { }
+    }
+
+    if (!Array.isArray(points)) return null;
+
+    return points.map((point: any, index: number) => {
+      if (!point || typeof point.x !== 'number' || typeof point.y !== 'number') return null;
+
+      let x = point.x;
+      let y = point.y;
+
+      const originalX = point.x.toFixed(2);
+      const originalY = point.y.toFixed(2);
+      const originalZ = point.z !== undefined && point.z !== null ? point.z.toFixed(2) : '0.00';
+
+      // Mediapipe는 기본적으로 0~1 사이의 normalized coordinate를 반환합니다.
+      // 값이 2보다 작다면 정규화된 좌표로 간주하여 디바이스 크기에 맞게 변환합니다.
+      if (Math.abs(x) <= 2 && Math.abs(y) <= 2) {
+        x = x * SCREEN_WIDTH;
+        y = y * SCREEN_HEIGHT;
+      }
+
+      return (
+        <View
+          key={index}
+          style={{
+            position: 'absolute',
+            left: x,
+            top: y,
+            zIndex: 100,
+          }}
+        >
+          {/* 랜드마크 점 */}
+          <View
+            style={{
+              position: 'absolute',
+              left: -4, // 점의 중앙을 좌표에 맞춤
+              top: -4,
+              width: 8,
+              height: 8,
+              borderRadius: 4,
+              backgroundColor: '#00FF00', // 연두색
+              borderWidth: 1,
+              borderColor: '#000000',
+            }}
+          />
+          {/* 랜드마크 수치 정보 텍스트 */}
+          <Text
+            style={{
+              color: '#FFFFFF',
+              fontSize: 8,
+              backgroundColor: 'rgba(0, 0, 0, 0.6)',
+              padding: 2,
+              marginLeft: 6,
+              marginTop: -6,
+              borderRadius: 2,
+              overflow: 'hidden',
+            }}
+          >
+            {`${index} (${originalX}, ${originalY}, ${originalZ})`}
+          </Text>
+        </View>
+      );
+    });
   };
 
   useEffect(() => {
@@ -63,7 +148,10 @@ export default function LiveFeedback() {
               leftArm={true}
               rightArm={true}
               onLandmark={handlePoseLandmarks}
+              style={styles.camera}
             />
+
+            {renderLandmarks()}
 
             <Pressable style={styles.overlay} onPress={handlePress} />
 
@@ -109,9 +197,6 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   camera: {
-    position: "absolute",
-    width: "100%",
-    height: "100%",
     opacity: 0.65,
   },
   overlay: {
