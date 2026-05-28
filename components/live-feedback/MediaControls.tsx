@@ -1,40 +1,70 @@
 import FontAwesome5 from '@react-native-vector-icons/fontawesome-free-solid';
 import React, { useRef, useState } from 'react';
+
+type MediaControlsProps = {
+  isPlaying: boolean;
+  progress: number;
+  repeatStart: number;
+  repeatEnd: number;
+  isRepeatEnabled: boolean;
+  onPlayPause?: (newPlaying: boolean) => void;
+  onProgressChange?: (newProgress: number) => void;
+  onRepeatToggle?: (enabled: boolean) => void;
+  onRepeatStartChange?: (value: number) => void;
+  onRepeatEndChange?: (value: number) => void;
+};
 import { PanResponder, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-export default function MediaControls() {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [progress, setProgress] = useState(0.2);
-  const [repeatStart, setRepeatStart] = useState(0.2);
-  const [repeatEnd, setRepeatEnd] = useState(0.6);
-  const [isRepeatEnabled, setIsRepeatEnabled] = useState(false);
+export default function MediaControls({
+  isPlaying,
+  progress,
+  repeatStart,
+  repeatEnd,
+  isRepeatEnabled,
+  onPlayPause,
+  onProgressChange,
+  onRepeatToggle,
+  onRepeatStartChange,
+  onRepeatEndChange,
+}: MediaControlsProps) {
+  // Props will be passed from parent component
+  //   isPlaying, progress, repeatStart, repeatEnd, isRepeatEnabled
+  //   onPlayPause, onProgressChange, onRepeatToggle, onRepeatStartChange, onRepeatEndChange
+  //   onInteractionStart, onInteractionEnd for hide timer handling
+  //   These are defined in the component's props (see prop types below).
+
+  const timelineWidth = useRef(0);
+  const [isDraggingProgress, setIsDraggingProgress] = useState(false);
   const [isDraggingLeft, setIsDraggingLeft] = useState(false);
   const [isDraggingRight, setIsDraggingRight] = useState(false);
 
-  const timelineWidth = useRef(0);
+  const progressHandleResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: () => true,
+    onPanResponderGrant: () => setIsDraggingProgress(true),
+    onPanResponderMove: (event, gestureState) => {
+      // Calculate new progress based on initial progress position plus gesture dx
+      const newProgress = (progress * timelineWidth.current + gestureState.dx) / timelineWidth.current;
+      const clamped = Math.max(0, Math.min(1, newProgress));
+      onProgressChange?.(clamped);
+    },
+    onPanResponderRelease: () => setIsDraggingProgress(false),
+  });
 
+  // Forward interaction events to parent (e.g., for hide‑timer handling)
   const handlePlayPause = () => {
-    setIsPlaying(!isPlaying);
-  };
-
-  const handlePrevious = () => {
-    setProgress(0);
-    setIsPlaying(false);
-  };
-
-  const handleNext = () => {
-    setProgress(1);
-    setIsPlaying(false);
+    onPlayPause?.(!isPlaying);
   };
 
   const handleRepeatToggle = () => {
-    setIsRepeatEnabled(!isRepeatEnabled);
+    onRepeatToggle?.(!isRepeatEnabled);
   };
 
   const handleTimelinePress = (event: any) => {
     const { locationX } = event.nativeEvent;
     const newProgress = locationX / timelineWidth.current;
-    setProgress(Math.max(0, Math.min(1, newProgress)));
+    const clamped = Math.max(0, Math.min(1, newProgress));
+    onProgressChange?.(clamped);
   };
 
   const leftHandleResponder = PanResponder.create({
@@ -44,7 +74,7 @@ export default function MediaControls() {
     onPanResponderMove: (event, gestureState) => {
       const newStart = (repeatStart * timelineWidth.current + gestureState.dx) / timelineWidth.current;
       const clampedStart = Math.max(0, Math.min(repeatEnd - 0.1, newStart));
-      setRepeatStart(clampedStart);
+      onRepeatStartChange?.(clampedStart);
     },
     onPanResponderRelease: () => setIsDraggingLeft(false),
   });
@@ -56,7 +86,7 @@ export default function MediaControls() {
     onPanResponderMove: (event, gestureState) => {
       const newEnd = (repeatEnd * timelineWidth.current + gestureState.dx) / timelineWidth.current;
       const clampedEnd = Math.max(repeatStart + 0.1, Math.min(1, newEnd));
-      setRepeatEnd(clampedEnd);
+      onRepeatEndChange?.(clampedEnd);
     },
     onPanResponderRelease: () => setIsDraggingRight(false),
   });
@@ -64,24 +94,24 @@ export default function MediaControls() {
   return (
     <View style={styles.media_controls}>
       <TouchableOpacity style={styles.repeat_section} onPress={handleRepeatToggle}>
-        <FontAwesome5 
-          name="redo" 
-          size={16} 
-          color={isRepeatEnabled ? "#6366f1" : "#ffffff"} 
+        <FontAwesome5
+          name="redo"
+          size={16}
+          color={isRepeatEnabled ? "#6366f1" : "#ffffff"}
           style={{ marginRight: 8, opacity: isRepeatEnabled ? 1 : 0.9 }}
         />
         <Text style={[styles.repeat_text, isRepeatEnabled && styles.repeat_text_active]}>
           {isRepeatEnabled ? '구간반복 중' : '구간반복하기'}
         </Text>
       </TouchableOpacity>
-      
-      <View 
+
+      <View
         style={styles.timeline_container}
         onLayout={(event) => {
           timelineWidth.current = event.nativeEvent.layout.width;
         }}
       >
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.timeline_touch_area}
           onPress={handleTimelinePress}
           activeOpacity={1}
@@ -89,45 +119,43 @@ export default function MediaControls() {
           <View style={styles.timeline_background} />
           <View style={[styles.timeline_progress, { width: `${progress * 100}%` }]} />
           {isRepeatEnabled && (
-            <View style={[styles.timeline_segment, { 
-              left: `${repeatStart * 100}%`, 
-              width: `${(repeatEnd - repeatStart) * 100}%` 
+            <View style={[styles.timeline_segment, {
+              left: `${repeatStart * 100}%`,
+              width: `${(repeatEnd - repeatStart) * 100}%`
             }]} />
           )}
-          {isRepeatEnabled && (
-            <>
-              <View 
-                style={[styles.timeline_handle_left, { left: `${repeatStart * 100}%` }, isDraggingLeft && styles.timeline_handle_dragging]}
-                {...leftHandleResponder.panHandlers}
-              />
-              <View 
-                style={[styles.timeline_handle_right, { left: `${repeatEnd * 100}%` }, isDraggingRight && styles.timeline_handle_dragging]}
-                {...rightHandleResponder.panHandlers}
-              />
-            </>
-          )}
-          <View style={styles.timeline_end_segment} />
+            {isRepeatEnabled && (
+              <>
+                <View
+                  style={[styles.timeline_handle_left, { left: `${repeatStart * 100}%` }, isDraggingLeft && styles.timeline_handle_dragging]}
+                  {...leftHandleResponder.panHandlers}
+                />
+                <View
+                  style={[styles.timeline_handle_right, { left: `${repeatEnd * 100}%` }, isDraggingRight && styles.timeline_handle_dragging]}
+                  {...rightHandleResponder.panHandlers}
+                />
+              </>
+            )}
+            {/* Progress handle */}
+            <View
+              style={[styles.timeline_handle_progress, { left: `${progress * 100}%` }, isDraggingProgress && styles.timeline_handle_dragging]}
+              {...progressHandleResponder.panHandlers}
+            />          <View style={styles.timeline_end_segment} />
         </TouchableOpacity>
       </View>
-      
+
       <View style={styles.playback_controls}>
-        <TouchableOpacity onPress={handlePrevious} style={styles.control_button_container}>
-          <FontAwesome5 name="step-backward" size={28} color="#ffffff" style={{ opacity: 0.8 }} />
-        </TouchableOpacity>
         <TouchableOpacity onPress={handlePlayPause} style={styles.play_button_container}>
-          <FontAwesome5 
-            name={isPlaying ? "pause" : "play"} 
-            size={28} 
-            color="#ffffff" 
+          <FontAwesome5
+            name={isPlaying ? "pause" : "play"}
+            size={28}
+            color="#ffffff"
             style={{ fontWeight: "600" }}
           />
         </TouchableOpacity>
-        <TouchableOpacity onPress={handleNext} style={styles.control_button_container}>
-          <FontAwesome5 name="step-forward" size={28} color="#ffffff" style={{ opacity: 0.8 }} />
-        </TouchableOpacity>
       </View>
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -257,10 +285,20 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 6,
   },
-  timeline_handle_dragging: {
-    backgroundColor: "#6366f1",
-    transform: [{ scale: 1.2 }],
+  timeline_handle_progress: {
+    position: "absolute",
+    top: -7,
+    width: 20,
+    height: 20,
+    backgroundColor: "#ff0000",
+    borderRadius: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 6,
   },
+  timeline_handle_dragging: { opacity: 0.7 },
   timeline_end_segment: {
     position: "absolute",
     right: 0,

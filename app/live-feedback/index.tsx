@@ -1,16 +1,30 @@
 import { RNMediapipe } from '@thinksys/react-native-mediapipe';
-import { useEffect, useRef, useState } from 'react';
-import { Button, Dimensions, ImageBackground, Pressable, StyleSheet, Text, View } from "react-native";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Button, Dimensions, Pressable, StyleSheet, Text, View } from "react-native";
 import { ScreenCornerRadius } from "react-native-screen-corner-radius";
 import { useCameraPermission } from 'react-native-vision-camera';
 import MediaControls from "../../components/live-feedback/MediaControls";
 import SpeedControl from "../../components/live-feedback/SpeedControl";
+import VideoBackground from "../../components/live-feedback/VideoBackground";
 
 export default function LiveFeedback() {
   const { hasPermission, requestPermission } = useCameraPermission();
   const [showControls, setShowControls] = useState(false);
   const [selectedSpeed, setSelectedSpeed] = useState(1.0);
   const [landmarksData, setLandmarksData] = useState<any>(null);
+  // Media control state lifted from MediaControls component
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [progress, setProgress] = useState(0);
+  const [repeatStart, setRepeatStart] = useState(0);
+  const [repeatEnd, setRepeatEnd] = useState(1);
+  const [isRepeatEnabled, setIsRepeatEnabled] = useState(false);
+  // Callbacks for MediaControls
+  const handlePlayPause = (newPlaying: boolean) => setIsPlaying(newPlaying);
+  const handleProgressChange = useCallback((newProgress: number) => setProgress(newProgress), []);
+  const handleRepeatToggle = (enabled: boolean) => setIsRepeatEnabled(enabled);
+  const handleRepeatStartChange = (value: number) => setRepeatStart(value);
+  const handleRepeatEndChange = (value: number) => setRepeatEnd(value);
+
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Clear any existing hide timer
@@ -152,9 +166,13 @@ export default function LiveFeedback() {
     <View style={styles.container}>
       <View style={styles.wrapper}>
         <View style={{ borderRadius: ScreenCornerRadius - 8, overflow: "hidden", flex: 1 }}>
-          <ImageBackground
-            source={require("../../assets/images/Ghost-Dancer.png")}
+          <VideoBackground
+            source={require("../../assets/videos/HeartsToHearts_style.mp4")}
             style={styles.background_dance}
+            isPlaying={isPlaying}
+            playbackRate={selectedSpeed}
+            progress={progress}
+            onProgressUpdate={handleProgressChange}
           >
             <View style={styles.background_dance_mask} />
             <RNMediapipe
@@ -175,15 +193,26 @@ export default function LiveFeedback() {
             {showControls && (
               <View pointerEvents="box-none" style={styles.controls}>
                 <SpeedControl
-          selectedSpeed={selectedSpeed}
-          onSpeedChange={setSelectedSpeed}
-          onInteractionStart={resetHideTimer}
-          onInteractionEnd={scheduleHideTimer}
-        />
-                <MediaControls />
+                  selectedSpeed={selectedSpeed}
+                  onSpeedChange={setSelectedSpeed}
+                  onInteractionStart={resetHideTimer}
+                  onInteractionEnd={scheduleHideTimer}
+                />
+                <MediaControls
+                  isPlaying={isPlaying}
+                  progress={progress}
+                  repeatStart={repeatStart}
+                  repeatEnd={repeatEnd}
+                  isRepeatEnabled={isRepeatEnabled}
+                  onPlayPause={handlePlayPause}
+                  onProgressChange={handleProgressChange}
+                  onRepeatToggle={handleRepeatToggle}
+                  onRepeatStartChange={handleRepeatStartChange}
+                  onRepeatEndChange={handleRepeatEndChange}
+                />
               </View>
             )}
-          </ImageBackground>
+          </VideoBackground>
 
         </View>
       </View>
@@ -219,7 +248,7 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   camera: {
-    opacity: 0.65,
+    opacity: 0.9,
   },
   overlay: {
     position: "absolute",
