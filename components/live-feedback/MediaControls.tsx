@@ -1,5 +1,6 @@
 import FontAwesome5 from '@react-native-vector-icons/fontawesome-free-solid';
 import React, { useRef, useState } from 'react';
+import { PanResponder, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type MediaControlsProps = {
   isPlaying: boolean;
@@ -13,7 +14,6 @@ type MediaControlsProps = {
   onRepeatStartChange?: (value: number) => void;
   onRepeatEndChange?: (value: number) => void;
 };
-import { PanResponder, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function MediaControls({
   isPlaying,
@@ -116,7 +116,7 @@ export default function MediaControls({
           onPress={handleTimelinePress}
           activeOpacity={1}
         >
-          <View style={styles.timeline_background} />
+
           <View style={[styles.timeline_progress, { width: `${progress * 100}%` }]} />
           {isRepeatEnabled && (
             <View style={[styles.timeline_segment, {
@@ -124,23 +124,24 @@ export default function MediaControls({
               width: `${(repeatEnd - repeatStart) * 100}%`
             }]} />
           )}
-            {isRepeatEnabled && (
-              <>
-                <View
-                  style={[styles.timeline_handle_left, { left: `${repeatStart * 100}%` }, isDraggingLeft && styles.timeline_handle_dragging]}
-                  {...leftHandleResponder.panHandlers}
-                />
-                <View
-                  style={[styles.timeline_handle_right, { left: `${repeatEnd * 100}%` }, isDraggingRight && styles.timeline_handle_dragging]}
-                  {...rightHandleResponder.panHandlers}
-                />
-              </>
-            )}
-            {/* Progress handle */}
-            <View
-              style={[styles.timeline_handle_progress, { left: `${progress * 100}%` }, isDraggingProgress && styles.timeline_handle_dragging]}
-              {...progressHandleResponder.panHandlers}
-            />          <View style={styles.timeline_end_segment} />
+          {isRepeatEnabled && (
+            <>
+              <View
+                style={[styles.timeline_handle_left, { left: `${repeatStart * 100}%` }, isDraggingLeft && styles.timeline_handle_dragging]}
+                {...leftHandleResponder.panHandlers}
+              />
+              <View
+                style={[styles.timeline_handle_right, { left: `${repeatEnd * 100}%` }, isDraggingRight && styles.timeline_handle_dragging]}
+                {...rightHandleResponder.panHandlers}
+              />
+            </>
+          )}
+          {/* Progress handle */}
+          <View
+            style={[styles.timeline_handle_progress, { left: `${progress * 100}%` }, isDraggingProgress && styles.timeline_handle_dragging]}
+            {...progressHandleResponder.panHandlers}
+          />
+
         </TouchableOpacity>
       </View>
 
