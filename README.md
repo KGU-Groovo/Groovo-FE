@@ -1,70 +1,66 @@
-# Getting Started with Create React App
+# Groovo
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+AI 기반 댄스 학습 모바일 앱
 
-## Available Scripts
+## 소개
 
-In the project directory, you can run:
+Groovo는 K-POP 안무를 쉽고 재미있게 배울 수 있는 앱입니다. 원하는 곡을 검색하고, 안무 영상을 미리보기한 뒤 바로 연습을 시작할 수 있습니다.
 
-### `npm start`
+## 주요 기능
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- **곡 검색** - 원하는 춤을 검색하여 빠르게 찾기
+- **영상 미리보기** - 안무 영상을 자동 재생으로 미리 확인
+- **난이도 표시** - 곡별 난이도를 음표 아이콘으로 직관적으로 표시
+- **기본기 학습** - 댄스 기본기를 단계별로 학습
+- **피드** - 다른 사용자들의 댄스 영상 공유
+- **마이페이지** - 학습 진행률 및 프로필 관리
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## 기술 스택
 
-### `npm test`
+- **Framework** : React Native (Expo)
+- **Routing** : Expo Router
+- **Language** : TypeScript
+- **Video** : expo-video
+- **UI** : expo-linear-gradient, react-native-svg
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## 프로젝트 구조
 
-### `npm run build`
+```
+├── app/                # 화면 (Expo Router)
+│   ├── (tabs)/         # 탭 네비게이션
+│   │   ├── index.tsx   # 홈 화면
+│   │   ├── basics.tsx  # 기본기
+│   │   ├── feed.tsx    # 피드
+│   │   └── my.tsx      # 마이페이지
+│   └── _layout.tsx     # 루트 레이아웃
+├── components/         # 재사용 컴포넌트
+│   ├── Header.tsx
+│   ├── SearchBar.tsx
+│   ├── SongCard.tsx
+│   ├── VideoPreview.tsx
+│   └── ...
+├── constants/          # 상수 및 설정
+│   ├── colors.ts
+│   ├── songs.ts
+│   └── tabBarStyle.ts
+└── assets/             # 이미지 및 영상 리소스
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## 실행 방법
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+```bash
+# 패키지 설치
+npm install
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+# 개발 서버 실행
+npx expo start
 
-### `npm run eject`
+# 플랫폼별 실행
+npx expo start --android
+npx expo start --ios
+npx expo start --web
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## 팀
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+**KGU-Groovo** - 경기대학교
