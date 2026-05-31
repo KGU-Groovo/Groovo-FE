@@ -1,0 +1,17 @@
+export const Colors = {
+  background: "#141414",
+  surface: "rgba(255, 255, 255, 0.05)",
+  surfaceLight: "#1e1e1e",
+  border: "#2a2a2a",
+  accent: "#FF52D7",
+  // accentGradientStart: "#c850c0",
+  // accentGradientEnd: "#ff52d7",
+  playGreen: "#4AE87A",
+  textPrimary: "#ffffff",
+  textSecondary: "#777777",
+  textMuted: "#555555",
+  navInactive: "#D1D5DB",
+  ratingActive: "#FFB869",
+  ratingInactive: "#444444",
+  badge: "#ff3b5c",
+};
