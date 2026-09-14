@@ -24,3 +24,4 @@ assert.equal(readFileSync('app/(tabs)/profile.tsx', 'utf8').includes('featuredVi
 assert.equal(existsSync('components/SongPreviewSheet.tsx'), true, 'song preview sheet must be shared');
 assert.equal(readFileSync('app/(tabs)/profile.tsx', 'utf8').includes('SongPreviewSheet'), true, 'profile videos must use the shared preview sheet');
 assert.equal(readFileSync('components/SongPreviewSheet.tsx', 'utf8').includes('VideoBackground'), true, 'song preview sheet must play the song video');
+assert.equal(readFileSync('app/_layout.tsx', 'utf8').includes('SplashScreen.setOptions'), true, 'root layout must fade the splash screen');
