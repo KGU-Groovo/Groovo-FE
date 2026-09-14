@@ -26,7 +26,7 @@ export default function HomeScreen() {
         {songs.map((song) => <Pressable key={song.id} style={styles.song} onPress={() => openSheet(song)}>
           <Image source={song.albumCover} style={styles.cover} />
           <View style={styles.songCopy}><Text style={styles.songTitle}>{song.title}</Text><Text style={styles.artist}>{song.artist}</Text><Text style={styles.notes}>{'♪ '.repeat(song.noteCount)}</Text></View>
-          <Ionicons name="play" size={24} color="#19E5A8" />
+          <Ionicons name="play" size={24} color="#FF43BD" />
         </Pressable>)}
       </ScrollView>
       <SongPreviewSheet song={selectedSong} onDismiss={() => setSelectedSong(null)} onStart={(song) => router.push({ pathname: '/live-feedback', params: { songId: song.id } })} />
