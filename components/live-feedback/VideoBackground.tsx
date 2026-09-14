@@ -13,11 +13,15 @@ interface VideoBackgroundProps {
    * When provided, the player will seek to the corresponding timestamp.
    */
   progress?: number;
+  repeatStart?: number;
+  repeatEnd?: number;
+  isRepeatEnabled?: boolean;
   /**
    * Callback invoked with the current playback progress (0‑1).
    * Used to keep UI timeline in sync with the video.
    */
   onProgressUpdate?: (progress: number) => void;
+  onPlaybackEnd?: () => void;
 }
 
 const VideoBackground: React.FC<VideoBackgroundProps> = ({
@@ -27,10 +31,14 @@ const VideoBackground: React.FC<VideoBackgroundProps> = ({
   isPlaying = true,
   playbackRate = 1.0,
   progress,
+  repeatStart = 0,
+  repeatEnd = 1,
+  isRepeatEnabled = false,
   onProgressUpdate,
+  onPlaybackEnd,
 }) => {
   const player = useVideoPlayer(source, (p) => {
-    p.loop = true;
+    p.loop = false;
     p.muted = true;
     p.play();
   });
@@ -38,6 +46,23 @@ const VideoBackground: React.FC<VideoBackgroundProps> = ({
   // Keep a stable reference to the callback so the interval isn't recreated
   const onProgressUpdateRef = useRef(onProgressUpdate);
   onProgressUpdateRef.current = onProgressUpdate;
+  const onPlaybackEndRef = useRef(onPlaybackEnd);
+  onPlaybackEndRef.current = onPlaybackEnd;
+  const repeatRef = useRef({ isRepeatEnabled, repeatStart, repeatEnd });
+  repeatRef.current = { isRepeatEnabled, repeatStart, repeatEnd };
+
+  useEffect(() => {
+    const subscription = player.addListener('playToEnd', () => {
+      const repeat = repeatRef.current;
+      if (repeat.isRepeatEnabled) {
+        player.currentTime = repeat.repeatStart * player.duration;
+        player.play();
+        return;
+      }
+      onPlaybackEndRef.current?.();
+    });
+    return () => subscription.remove();
+  }, [player]);
 
   // Play / pause control
   useEffect(() => {
@@ -75,6 +100,12 @@ const VideoBackground: React.FC<VideoBackgroundProps> = ({
     const interval = setInterval(() => {
       if (typeof player.duration === 'number' && player.duration > 0) {
         const currentProgress = player.currentTime / player.duration;
+        const repeat = repeatRef.current;
+        if (repeat.isRepeatEnabled && currentProgress >= repeat.repeatEnd) {
+          player.currentTime = repeat.repeatStart * player.duration;
+          onProgressUpdateRef.current?.(repeat.repeatStart);
+          return;
+        }
         onProgressUpdateRef.current?.(currentProgress);
       }
     }, 300);
