@@ -50,9 +50,7 @@ export default function MediaControls({
     onPlayPause?.(!isPlaying);
   };
 
-  const handleRepeatToggle = () => {
-    onRepeatToggle?.(!isRepeatEnabled);
-  };
+  const handleRepeatToggle = () => onRepeatToggle?.(!isRepeatEnabled);
 
   const handleTimelinePress = (event: any) => {
     const { locationX } = event.nativeEvent;
@@ -66,9 +64,8 @@ export default function MediaControls({
     onMoveShouldSetPanResponder: () => true,
     onPanResponderGrant: () => setIsDraggingLeft(true),
     onPanResponderMove: (event, gestureState) => {
-      const newStart = (repeatStart * timelineWidth.current + gestureState.dx) / timelineWidth.current;
-      const clampedStart = Math.max(0, Math.min(repeatEnd - 0.1, newStart));
-      onRepeatStartChange?.(clampedStart);
+      const nextStart = (repeatStart * timelineWidth.current + gestureState.dx) / timelineWidth.current;
+      onRepeatStartChange?.(Math.max(0, Math.min(repeatEnd - 0.1, nextStart)));
     },
     onPanResponderRelease: () => setIsDraggingLeft(false),
   });
@@ -78,9 +75,8 @@ export default function MediaControls({
     onMoveShouldSetPanResponder: () => true,
     onPanResponderGrant: () => setIsDraggingRight(true),
     onPanResponderMove: (event, gestureState) => {
-      const newEnd = (repeatEnd * timelineWidth.current + gestureState.dx) / timelineWidth.current;
-      const clampedEnd = Math.max(repeatStart + 0.1, Math.min(1, newEnd));
-      onRepeatEndChange?.(clampedEnd);
+      const nextEnd = (repeatEnd * timelineWidth.current + gestureState.dx) / timelineWidth.current;
+      onRepeatEndChange?.(Math.max(repeatStart + 0.1, Math.min(1, nextEnd)));
     },
     onPanResponderRelease: () => setIsDraggingRight(false),
   });
@@ -88,17 +84,9 @@ export default function MediaControls({
   return (
     <View style={styles.media_controls}>
       <TouchableOpacity style={styles.repeat_section} onPress={handleRepeatToggle}>
-        <FontAwesome5
-          name="redo"
-          size={16}
-          color={isRepeatEnabled ? "#6366f1" : "#ffffff"}
-          style={{ marginRight: 8, opacity: isRepeatEnabled ? 1 : 0.9 }}
-        />
-        <Text style={[styles.repeat_text, isRepeatEnabled && styles.repeat_text_active]}>
-          {isRepeatEnabled ? '구간반복 중' : '구간반복하기'}
-        </Text>
+        <FontAwesome5 name="redo" size={16} color={isRepeatEnabled ? "#6366f1" : "#ffffff"} style={{ marginRight: 8 }} />
+        <Text style={[styles.repeat_text, isRepeatEnabled && styles.repeat_text_active]}>{isRepeatEnabled ? '구간반복 중' : '구간반복하기'}</Text>
       </TouchableOpacity>
-
       <View
         style={styles.timeline_container}
         onLayout={(event) => {
@@ -112,24 +100,11 @@ export default function MediaControls({
         >
 
           <View style={[styles.timeline_progress, { width: `${progress * 100}%` }]} />
-          {isRepeatEnabled && (
-            <View style={[styles.timeline_segment, {
-              left: `${repeatStart * 100}%`,
-              width: `${(repeatEnd - repeatStart) * 100}%`
-            }]} />
-          )}
-          {isRepeatEnabled && (
-            <>
-              <View
-                style={[styles.timeline_handle_left, { left: `${repeatStart * 100}%` }, isDraggingLeft && styles.timeline_handle_dragging]}
-                {...leftHandleResponder.panHandlers}
-              />
-              <View
-                style={[styles.timeline_handle_right, { left: `${repeatEnd * 100}%` }, isDraggingRight && styles.timeline_handle_dragging]}
-                {...rightHandleResponder.panHandlers}
-              />
-            </>
-          )}
+          {isRepeatEnabled && <View style={[styles.timeline_segment, { left: `${repeatStart * 100}%`, width: `${(repeatEnd - repeatStart) * 100}%` }]} />}
+          {isRepeatEnabled && <>
+            <View style={[styles.timeline_handle_left, { left: `${repeatStart * 100}%` }, isDraggingLeft && styles.timeline_handle_dragging]} {...leftHandleResponder.panHandlers} />
+            <View style={[styles.timeline_handle_right, { left: `${repeatEnd * 100}%` }, isDraggingRight && styles.timeline_handle_dragging]} {...rightHandleResponder.panHandlers} />
+          </>}
           {/* Progress handle */}
           <View
             style={[styles.timeline_handle_progress, { left: `${progress * 100}%` }, isDraggingProgress && styles.timeline_handle_dragging]}

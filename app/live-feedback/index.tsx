@@ -1,4 +1,5 @@
 import { RNMediapipe } from '@thinksys/react-native-mediapipe';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button, Dimensions, Pressable, StyleSheet, Text, View } from "react-native";
 import { ScreenCornerRadius } from "react-native-screen-corner-radius";
@@ -6,8 +7,32 @@ import { useCameraPermission } from 'react-native-vision-camera';
 import MediaControls from "../../components/live-feedback/MediaControls";
 import SpeedControl from "../../components/live-feedback/SpeedControl";
 import VideoBackground from "../../components/live-feedback/VideoBackground";
+import { getFeedbackState } from "../../components/live-feedback/feedback-score";
+import { getSong } from '../../data/songs';
+import { PoseLandmark, useAiFeedbackSocket } from '../../hooks/use-ai-feedback-socket';
+
+function toPoseLandmarks(data: unknown): PoseLandmark[] {
+  if (typeof data === 'string') {
+    try {
+      return toPoseLandmarks(JSON.parse(data));
+    } catch {
+      return [];
+    }
+  }
+  if (!Array.isArray(data)) {
+    if (!data || typeof data !== 'object') return [];
+    const payload = data as { landmarks?: unknown; result?: unknown };
+    return toPoseLandmarks(payload.landmarks ?? payload.result);
+  }
+  return data.filter((point): point is PoseLandmark => (
+    !!point && typeof point === 'object' && typeof (point as PoseLandmark).x === 'number' && typeof (point as PoseLandmark).y === 'number'
+  ));
+}
 
 export default function LiveFeedback() {
+  const router = useRouter();
+  const { songId } = useLocalSearchParams<{ songId?: string }>();
+  const song = getSong(songId);
   const { hasPermission, requestPermission } = useCameraPermission();
   const [showControls, setShowControls] = useState(false);
   const [selectedSpeed, setSelectedSpeed] = useState(1.0);
@@ -17,12 +42,16 @@ export default function LiveFeedback() {
   const [repeatStart, setRepeatStart] = useState(0);
   const [repeatEnd, setRepeatEnd] = useState(1);
   const [isRepeatEnabled, setIsRepeatEnabled] = useState(false);
+  const [feedbackScore, setFeedbackScore] = useState<number | null>(null);
+  const feedbackState = getFeedbackState(feedbackScore);
+  const { sendLandmarks } = useAiFeedbackSocket({
+    url: process.env.EXPO_PUBLIC_AI_WEBSOCKET_URL,
+    onFeedback: ({ score }) => setFeedbackScore(score),
+  });
 
   const handlePlayPause = (newPlaying: boolean) => setIsPlaying(newPlaying);
   const handleProgressChange = useCallback((newProgress: number) => setProgress(newProgress), []);
   const handleRepeatToggle = (enabled: boolean) => setIsRepeatEnabled(enabled);
-  const handleRepeatStartChange = (value: number) => setRepeatStart(value);
-  const handleRepeatEndChange = (value: number) => setRepeatEnd(value);
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -50,34 +79,18 @@ export default function LiveFeedback() {
   };
 
   const handlePoseLandmarks = (landmarks: any) => {
-    setLandmarksData(landmarks);
+    const points = toPoseLandmarks(landmarks);
+    setLandmarksData(points);
+    sendLandmarks(points);
   };
 
   const renderLandmarks = () => {
     if (!landmarksData) return null;
 
-    let points: any[] = [];
-    if (Array.isArray(landmarksData)) {
-      points = landmarksData;
-    } else if (landmarksData?.landmarks && Array.isArray(landmarksData.landmarks)) {
-      points = landmarksData.landmarks;
-    } else if (typeof landmarksData === 'string') {
-      try {
-        const parsed = JSON.parse(landmarksData);
-        points = Array.isArray(parsed) ? parsed : parsed?.landmarks || [];
-      } catch (e) { }
-    } else if (landmarksData?.result) {
-      try {
-        const parsed = typeof landmarksData.result === 'string' ? JSON.parse(landmarksData.result) : landmarksData.result;
-        points = Array.isArray(parsed) ? parsed : parsed?.landmarks || [];
-      } catch (e) { }
-    }
+    const points = toPoseLandmarks(landmarksData);
+    if (points.length === 0) return null;
 
-    if (!Array.isArray(points)) return null;
-
-    return points.map((point: any, index: number) => {
-      if (!point || typeof point.x !== 'number' || typeof point.y !== 'number') return null;
-
+    return points.map((point, index) => {
       let x = point.x;
       let y = point.y;
 
@@ -119,14 +132,18 @@ export default function LiveFeedback() {
   return (
     <View style={styles.container}>
       <View style={styles.wrapper}>
-        <View style={{ borderRadius: ScreenCornerRadius - 8, overflow: "hidden", flex: 1, backgroundColor: 'black' }}>
+        <View style={[styles.video_frame, { borderColor: feedbackState.color }]}>
           <VideoBackground
-            source={require("../../assets/videos/HeartsToHearts_style.mp4")}
+            source={song.videoSource}
             style={styles.video}
             isPlaying={isPlaying}
             playbackRate={selectedSpeed}
             progress={progress}
+            repeatStart={repeatStart}
+            repeatEnd={repeatEnd}
+            isRepeatEnabled={isRepeatEnabled}
             onProgressUpdate={handleProgressChange}
+            onPlaybackEnd={() => router.replace('/result')}
           />
           <RNMediapipe
             width={SCREEN_WIDTH}
@@ -139,6 +156,10 @@ export default function LiveFeedback() {
             style={styles.camera}
           />
           {renderLandmarks()}
+          <View style={[styles.feedback_badge, { backgroundColor: feedbackState.color }]}>
+            <Text style={styles.feedback_label}>{feedbackState.label}</Text>
+            {feedbackScore !== null && <Text style={styles.feedback_score}>{Math.round(feedbackScore)}점</Text>}
+          </View>
           <Pressable style={styles.overlay} onPress={handlePress} />
           {showControls && (
             <View pointerEvents="box-none" style={styles.controls}>
@@ -157,8 +178,8 @@ export default function LiveFeedback() {
                 onPlayPause={handlePlayPause}
                 onProgressChange={handleProgressChange}
                 onRepeatToggle={handleRepeatToggle}
-                onRepeatStartChange={handleRepeatStartChange}
-                onRepeatEndChange={handleRepeatEndChange}
+                onRepeatStartChange={setRepeatStart}
+                onRepeatEndChange={setRepeatEnd}
               />
             </View>
           )}
@@ -180,6 +201,13 @@ const styles = StyleSheet.create({
     backgroundColor: "red",
     padding: 8,
   },
+  video_frame: {
+    borderRadius: ScreenCornerRadius - 8,
+    overflow: "hidden",
+    flex: 1,
+    backgroundColor: 'black',
+    borderWidth: 4,
+  },
   camera: {
     width: "100%",
     height: "100%",
@@ -187,6 +215,27 @@ const styles = StyleSheet.create({
   },
   video: {
     ...StyleSheet.absoluteFillObject,
+  },
+  feedback_badge: {
+    position: 'absolute',
+    top: 20,
+    left: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+  },
+  feedback_label: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  feedback_score: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
   },
   message: {
     textAlign: "center",
