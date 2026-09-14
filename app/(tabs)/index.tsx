@@ -27,7 +27,7 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <View style={styles.topBar}>
-        <View style={styles.header}><Text style={styles.logo}>G</Text><Ionicons name="notifications-outline" size={26} color="#FFF" /></View>
+        <View style={styles.header}><Image source={require('../../assets/images/Groovo_icon.png')} style={styles.logo} /><Ionicons name="notifications-outline" size={26} color="#FFF" /></View>
         <View style={styles.search}><Ionicons name="search" size={23} color="#FF43BD" /><Text style={styles.searchText}>원하는 춤을 검색해보세요</Text></View>
       </View>
       <ScrollView contentContainerStyle={styles.content}>
@@ -64,7 +64,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#151820' }, topBar: { paddingHorizontal: 24, paddingBottom: 12, }, content: { paddingHorizontal: 24, paddingBottom: 120, gap: 12 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 },
-  logo: { color: '#FF43BD', fontSize: 34, fontWeight: '900' },
+  logo: { width: 34, height: 34, resizeMode: 'contain' },
   search: { height: 48, borderRadius: 14, backgroundColor: '#353941', flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, marginBottom: 4 },
   searchText: { color: '#BFC0C5', fontSize: 14 },
   hero: { minHeight: 280, borderRadius: 28, overflow: 'hidden', backgroundColor: '#30343C', justifyContent: 'space-between', padding: 24 },
