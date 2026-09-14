@@ -1,29 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useRef, useState } from 'react';
-import { Animated, Image, ImageBackground, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Song, songs } from '../../data/songs';
+import { SongPreviewSheet } from '../../components/SongPreviewSheet';
 
 export default function HomeScreen() {
   const router = useRouter();
   const [selectedSong, setSelectedSong] = useState<Song | null>(null);
-  const sheetOffset = useRef(new Animated.Value(480)).current;
-  const maskOpacity = useRef(new Animated.Value(0)).current;
-  const animateSheet = (toValue: number, onEnd?: () => void) => Animated.parallel([
-    Animated.timing(sheetOffset, { toValue: toValue ? 480 : 0, duration: 260, useNativeDriver: true }),
-    Animated.timing(maskOpacity, { toValue: toValue ? 0 : .22, duration: 180, useNativeDriver: true }),
-  ]).start(({ finished }) => finished && onEnd?.());
-  const openSheet = (song: Song) => {
-    setSelectedSong(song);
-    sheetOffset.setValue(480);
-    maskOpacity.setValue(0);
-    requestAnimationFrame(() => animateSheet(0));
-  };
-  const closeSheet = (onEnd?: () => void) => animateSheet(1, () => {
-    setSelectedSong(null);
-    onEnd?.();
-  });
+  const openSheet = (song: Song) => setSelectedSong(song);
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <View style={styles.topBar}>
@@ -43,20 +29,7 @@ export default function HomeScreen() {
           <Ionicons name="play" size={24} color="#19E5A8" />
         </Pressable>)}
       </ScrollView>
-      <Modal visible={selectedSong !== null} transparent animationType="none" onRequestClose={() => closeSheet()}>
-        <View style={styles.sheetBackdrop}>
-          <Animated.View pointerEvents="none" style={[styles.sheetMask, { opacity: maskOpacity }]} />
-          <Pressable style={styles.sheetDismiss} onPress={() => closeSheet()} />
-          <Animated.View style={[styles.sheet, { transform: [{ translateY: sheetOffset }] }]}>
-            <View style={styles.sheetHandle} />
-            <ImageBackground source={selectedSong?.albumCover ?? songs[0].albumCover} style={styles.sheetPreview} imageStyle={styles.sheetImage}>
-              <View style={styles.sheetOverlay} />
-              <View style={styles.sheetSongInfo}><Image source={selectedSong?.albumCover ?? songs[0].albumCover} style={styles.artwork} /><View><Text style={styles.sheetTitle}>{selectedSong?.title}</Text><Text style={styles.sheetArtist}>{selectedSong?.artist}</Text></View></View>
-              <Pressable style={styles.sheetPlay} onPress={() => closeSheet(() => router.push({ pathname: '/live-feedback', params: { songId: selectedSong?.id ?? songs[0].id } }))}><Text style={styles.sheetPlayText}>PLAY</Text></Pressable>
-            </ImageBackground>
-          </Animated.View>
-        </View>
-      </Modal>
+      <SongPreviewSheet song={selectedSong} onDismiss={() => setSelectedSong(null)} onStart={(song) => router.push({ pathname: '/live-feedback', params: { songId: song.id } })} />
     </SafeAreaView>
   );
 }
@@ -75,7 +48,4 @@ const styles = StyleSheet.create({
   sectionTitle: { color: '#FFF', fontSize: 20, fontWeight: '800', marginTop: 14 },
   song: { minHeight: 108, backgroundColor: '#282D36', borderLeftWidth: 4, borderLeftColor: '#FF43BD', borderRadius: 14, padding: 10, flexDirection: 'row', alignItems: 'center', gap: 14 },
   cover: { width: 72, height: 72, borderRadius: 8 }, songCopy: { flex: 1, gap: 4 }, songTitle: { color: '#FFF', fontSize: 18, fontWeight: '800' },
-  sheetBackdrop: { flex: 1, justifyContent: 'flex-end' }, sheetMask: { ...StyleSheet.absoluteFillObject, backgroundColor: '#000' }, sheetDismiss: { ...StyleSheet.absoluteFillObject }, sheet: { borderTopLeftRadius: 30, borderTopRightRadius: 30, overflow: 'hidden', backgroundColor: '#25122A' }, sheetHandle: { alignSelf: 'center', width: 42, height: 5, borderRadius: 3, backgroundColor: '#B9A9BC', marginVertical: 10 },
-  sheetPreview: { height: 390, justifyContent: 'space-between', padding: 26, paddingBottom: 34 }, sheetImage: { opacity: .6, resizeMode: 'cover' }, sheetOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(15,0,20,.26)' },
-  sheetSongInfo: { flexDirection: 'row', alignItems: 'center', gap: 14 }, artwork: { width: 76, height: 76, borderRadius: 8 }, sheetTitle: { color: '#FFF', fontSize: 22, fontWeight: '900' }, sheetArtist: { color: '#E0D6E3', marginTop: 6, letterSpacing: 1.4 }, sheetPlay: { backgroundColor: '#D800C6', borderRadius: 10, paddingVertical: 15, alignItems: 'center' }, sheetPlayText: { color: '#FFF', fontSize: 26, fontWeight: '900' },
 });

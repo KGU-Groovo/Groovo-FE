@@ -21,4 +21,6 @@ assert.equal(existsSync('hooks/use-ai-feedback-socket.ts'), true, 'AI feedback W
 assert.equal(readFileSync('hooks/use-ai-feedback-socket.ts', 'utf8').includes('new WebSocket'), true, 'AI feedback hook must create a WebSocket connection');
 assert.equal(readFileSync('app/(tabs)/profile.tsx', 'utf8').includes('setSelectedSection'), true, 'profile must switch between content sections');
 assert.equal(readFileSync('app/(tabs)/profile.tsx', 'utf8').includes('featuredVideo'), true, 'profile must feature the latest dance video');
-assert.equal(readFileSync('app/(tabs)/profile.tsx', 'utf8').includes('<Modal'), true, 'profile videos must open a preview sheet');
+assert.equal(existsSync('components/SongPreviewSheet.tsx'), true, 'song preview sheet must be shared');
+assert.equal(readFileSync('app/(tabs)/profile.tsx', 'utf8').includes('SongPreviewSheet'), true, 'profile videos must use the shared preview sheet');
+assert.equal(readFileSync('components/SongPreviewSheet.tsx', 'utf8').includes('VideoBackground'), true, 'song preview sheet must play the song video');

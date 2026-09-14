@@ -1,23 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useRef, useState } from 'react';
-import { Animated, Image, ImageBackground, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Song, songs } from '../../data/songs';
+import { SongPreviewSheet } from '../../components/SongPreviewSheet';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const [selectedSection, setSelectedSection] = useState<'videos' | 'favorites'>('videos');
   const [selectedSong, setSelectedSong] = useState<Song | null>(null);
   const featuredVideo = songs[0];
-  const sheetOffset = useRef(new Animated.Value(480)).current;
-  const maskOpacity = useRef(new Animated.Value(0)).current;
-  const animateSheet = (toValue: number, onEnd?: () => void) => Animated.parallel([
-    Animated.timing(sheetOffset, { toValue: toValue ? 480 : 0, duration: 260, useNativeDriver: true }),
-    Animated.timing(maskOpacity, { toValue: toValue ? 0 : .22, duration: 180, useNativeDriver: true }),
-  ]).start(({ finished }) => finished && onEnd?.());
-  const openSheet = (song: Song) => { setSelectedSong(song); sheetOffset.setValue(480); maskOpacity.setValue(0); requestAnimationFrame(() => animateSheet(0)); };
-  const closeSheet = (onEnd?: () => void) => animateSheet(1, () => { setSelectedSong(null); onEnd?.(); });
+  const openSheet = (song: Song) => setSelectedSong(song);
   return <SafeAreaView style={styles.screen} edges={['top']}><ScrollView contentContainerStyle={styles.content}>
     <View style={styles.profile}>
       <View style={styles.avatarWrap}><Image source={require('../../assets/images/Ghost-Dancer.png')} style={styles.avatar} /><View style={styles.tierBadge}><Ionicons name="flash" size={13} color="#FFF" /></View></View>
@@ -36,7 +30,7 @@ export default function ProfileScreen() {
       </Pressable>
       {songs.slice(1).map((song, index) => <Pressable key={song.id} style={styles.recentVideo} onPress={() => openSheet(songs[index + 1])}><Image source={songs[index + 1].albumCover} style={styles.recentImage} /><View style={styles.recentCopy}><Text style={styles.cardTitle}>{song.title}</Text><Text style={styles.meta}><Ionicons name="eye-outline" size={13} /> {song.views} views</Text></View><Ionicons name="play-circle" size={32} color="#FF43BD" /></Pressable>)}
     </View> : <View style={styles.favoriteList}>{songs.map((song) => <Pressable key={song.id} style={styles.favorite} onPress={() => openSheet(song)}><Image source={song.albumCover} style={styles.favoriteCover} /><View style={styles.favoriteCopy}><Text style={styles.cardTitle}>{song.title}</Text><Text style={styles.meta}>{song.artist}</Text><Text style={styles.notes}>{'♪ '.repeat(song.noteCount)}</Text></View><Ionicons name="heart" size={21} color="#FF43BD" /></Pressable>)}</View>}
-  </ScrollView><Modal visible={selectedSong !== null} transparent animationType="none" onRequestClose={() => closeSheet()}><View style={styles.sheetBackdrop}><Animated.View pointerEvents="none" style={[styles.sheetMask, { opacity: maskOpacity }]} /><Pressable style={styles.sheetDismiss} onPress={() => closeSheet()} /><Animated.View style={[styles.sheet, { transform: [{ translateY: sheetOffset }] }]}><View style={styles.sheetHandle} /><ImageBackground source={selectedSong?.albumCover ?? songs[0].albumCover} style={styles.sheetPreview} imageStyle={styles.sheetImage}><View style={styles.sheetOverlay} /><View style={styles.sheetSongInfo}><Image source={selectedSong?.albumCover ?? songs[0].albumCover} style={styles.artwork} /><View><Text style={styles.sheetTitle}>{selectedSong?.title}</Text><Text style={styles.sheetArtist}>{selectedSong?.artist}</Text></View></View><Pressable style={styles.sheetPlay} onPress={() => closeSheet(() => router.push({ pathname: '/live-feedback', params: { songId: selectedSong?.id ?? songs[0].id } }))}><Text style={styles.sheetPlayText}>연습 시작하기</Text></Pressable></ImageBackground></Animated.View></View></Modal></SafeAreaView>;
+  </ScrollView><SongPreviewSheet song={selectedSong} onDismiss={() => setSelectedSong(null)} onStart={(song) => router.push({ pathname: '/live-feedback', params: { songId: song.id } })} /></SafeAreaView>;
 }
 
 const styles = StyleSheet.create({
@@ -46,5 +40,4 @@ const styles = StyleSheet.create({
   sectionTabs: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#3E4552' }, sectionTab: { flex: 1, alignItems: 'center', paddingVertical: 12 }, activeTab: { borderBottomWidth: 2, borderBottomColor: '#FF43BD' }, sectionTabText: { color: '#9EA5B0', fontSize: 15, fontWeight: '700' }, activeTabText: { color: '#FFF' },
   videoSection: { gap: 12 }, featuredVideo: { height: 260, borderRadius: 24, overflow: 'hidden', justifyContent: 'flex-end' }, featuredImage: { ...StyleSheet.absoluteFillObject, width: undefined, height: undefined }, featuredShade: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(8, 10, 14, .48)' }, featuredCopy: { padding: 18, gap: 4 }, featuredLabel: { color: '#FFC4E8', fontSize: 12, fontWeight: '800' }, featuredTitle: { color: '#FFF', fontSize: 24, fontWeight: '800' }, featuredPlay: { position: 'absolute', right: 16, bottom: 16, width: 46, height: 46, borderRadius: 23, backgroundColor: '#FF43BD', alignItems: 'center', justifyContent: 'center' }, recentVideo: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, borderRadius: 18, backgroundColor: '#242831' }, recentImage: { width: 68, height: 68, borderRadius: 12 }, recentCopy: { flex: 1, gap: 5 }, cardTitle: { color: '#F7F8FA', fontSize: 15, fontWeight: '700' }, meta: { color: '#C7CCD6', fontSize: 13 },
   favoriteList: { gap: 12 }, favorite: { flexDirection: 'row', alignItems: 'center', gap: 13, padding: 12, borderRadius: 18, backgroundColor: '#242831' }, favoriteCover: { width: 62, height: 62, borderRadius: 12 }, favoriteCopy: { flex: 1, gap: 4 }, notes: { color: '#FFB55A', fontSize: 15, letterSpacing: 2 },
-  sheetBackdrop: { flex: 1, justifyContent: 'flex-end' }, sheetMask: { ...StyleSheet.absoluteFillObject, backgroundColor: '#000' }, sheetDismiss: { ...StyleSheet.absoluteFillObject }, sheet: { borderTopLeftRadius: 30, borderTopRightRadius: 30, overflow: 'hidden', backgroundColor: '#20242C' }, sheetHandle: { alignSelf: 'center', width: 42, height: 5, borderRadius: 3, backgroundColor: '#AEB4BF', marginVertical: 10 }, sheetPreview: { height: 390, justifyContent: 'space-between', padding: 26, paddingBottom: 34 }, sheetImage: { opacity: .6, resizeMode: 'cover' }, sheetOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(8,10,14,.32)' }, sheetSongInfo: { flexDirection: 'row', alignItems: 'center', gap: 14 }, artwork: { width: 76, height: 76, borderRadius: 8 }, sheetTitle: { color: '#FFF', fontSize: 22, fontWeight: '900' }, sheetArtist: { color: '#D7DAE0', marginTop: 6, letterSpacing: 1.4 }, sheetPlay: { backgroundColor: '#D800C6', borderRadius: 10, paddingVertical: 15, alignItems: 'center' }, sheetPlayText: { color: '#FFF', fontSize: 19, fontWeight: '900' },
 });
