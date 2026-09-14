@@ -3,8 +3,8 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Song, songs } from '../../data/songs';
 import { SongPreviewSheet } from '../../components/SongPreviewSheet';
+import { Song, songs } from '../../data/songs';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -38,7 +38,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#151820' }, topBar: { paddingHorizontal: 24, paddingBottom: 12, }, content: { paddingHorizontal: 24, paddingBottom: 120, gap: 12 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 },
   logo: { width: 34, height: 34, resizeMode: 'contain' },
-  search: { height: 48, borderRadius: 14, backgroundColor: '#353941', flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, marginBottom: 4 },
+  search: { height: 48, borderRadius: 14, backgroundColor: '#242831', flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, marginBottom: 4 },
   searchText: { color: '#BFC0C5', fontSize: 14 },
   hero: { minHeight: 280, borderRadius: 28, overflow: 'hidden', backgroundColor: '#30343C', justifyContent: 'space-between', padding: 24 },
   heroImage: { ...StyleSheet.absoluteFillObject, width: undefined, height: undefined, opacity: 0.38 },
