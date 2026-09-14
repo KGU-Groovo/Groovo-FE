@@ -46,6 +46,6 @@ const styles = StyleSheet.create({
   artist: { color: '#C9C3CF', fontSize: 13 }, notes: { color: '#FFB55A', fontSize: 18, letterSpacing: 3 },
   play: { alignSelf: 'center', color: '#FFF', fontSize: 25, fontWeight: '900', backgroundColor: '#D800C6', borderRadius: 10, overflow: 'hidden', paddingHorizontal: 72, paddingVertical: 13 },
   sectionTitle: { color: '#FFF', fontSize: 20, fontWeight: '800', marginTop: 14 },
-  song: { minHeight: 108, backgroundColor: '#282D36', borderLeftWidth: 4, borderLeftColor: '#FF43BD', borderRadius: 14, padding: 10, flexDirection: 'row', alignItems: 'center', gap: 14 },
+  song: { minHeight: 108, backgroundColor: '#282D36', borderRadius: 14, padding: 10, flexDirection: 'row', alignItems: 'center', gap: 14 },
   cover: { width: 72, height: 72, borderRadius: 8 }, songCopy: { flex: 1, gap: 4 }, songTitle: { color: '#FFF', fontSize: 18, fontWeight: '800' },
 });
