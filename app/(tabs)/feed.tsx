@@ -36,7 +36,7 @@ export default function FeedScreen() {
           <View style={styles.action}><Ionicons name="chatbubble-outline" size={29} color="#FFF" /><Text style={styles.actionText}>{item.comments}</Text></View>
           <View style={styles.action}><Ionicons name="share-social-outline" size={29} color="#FFF" /><Text style={styles.actionText}>공유</Text></View>
         </View>
-        <View style={styles.caption}><Text style={styles.user}>{item.user}</Text><Text style={styles.copy}>{item.song.title} {item.caption}</Text><Text style={styles.audio}>{'♪ '.repeat(item.song.noteCount)}{item.song.title} · {item.song.artist}</Text><Pressable style={styles.learn} onPress={() => router.push({ pathname: '/live-feedback', params: { songId: item.song.id } })}><Text style={styles.learnText}>이 안무 배우기</Text></Pressable></View>
+        <View style={styles.caption}><Text style={styles.user}>{item.user}</Text><Text style={styles.copy}>{item.song.title} {item.caption}</Text><Pressable style={styles.learn} onPress={() => router.push({ pathname: '/live-feedback', params: { songId: item.song.id } })}><Text style={styles.learnText}>이 안무 배우기</Text></Pressable></View>
       </ImageBackground>;
     }}
   /></View>;
