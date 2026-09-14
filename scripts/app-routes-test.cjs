@@ -19,3 +19,9 @@ assert.equal(readFileSync('app/(tabs)/feed.tsx', 'utf8').includes("from '../../d
 assert.equal(readFileSync('app/(tabs)/_layout.tsx', 'utf8').includes('NativeTabs'), true, 'tab bar must use the native glass surface');
 assert.equal(existsSync('hooks/use-ai-feedback-socket.ts'), true, 'AI feedback WebSocket hook must exist');
 assert.equal(readFileSync('hooks/use-ai-feedback-socket.ts', 'utf8').includes('new WebSocket'), true, 'AI feedback hook must create a WebSocket connection');
+assert.equal(readFileSync('app/(tabs)/profile.tsx', 'utf8').includes('setSelectedSection'), true, 'profile must switch between content sections');
+assert.equal(readFileSync('app/(tabs)/profile.tsx', 'utf8').includes('featuredVideo'), true, 'profile must feature the latest dance video');
+assert.equal(existsSync('components/SongPreviewSheet.tsx'), true, 'song preview sheet must be shared');
+assert.equal(readFileSync('app/(tabs)/profile.tsx', 'utf8').includes('SongPreviewSheet'), true, 'profile videos must use the shared preview sheet');
+assert.equal(readFileSync('components/SongPreviewSheet.tsx', 'utf8').includes('VideoBackground'), true, 'song preview sheet must play the song video');
+assert.equal(readFileSync('app/_layout.tsx', 'utf8').includes('SplashScreen.setOptions'), true, 'root layout must fade the splash screen');
