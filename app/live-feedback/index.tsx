@@ -9,7 +9,13 @@ import SpeedControl from "../../components/live-feedback/SpeedControl";
 import VideoBackground from "../../components/live-feedback/VideoBackground";
 import { getFeedbackState } from "../../components/live-feedback/feedback-score";
 import { getSong } from '../../data/songs';
-import { PoseLandmark, useAiFeedbackSocket } from '../../hooks/use-ai-feedback-socket';
+import { DcaFeedback, PentagonScores, PoseLandmark, useAiFeedbackSocket } from '../../hooks/use-ai-feedback-socket';
+
+type ResultData = {
+  score: number;
+  dca?: DcaFeedback;
+  pentagon?: PentagonScores;
+};
 
 function toPoseLandmarks(data: unknown): PoseLandmark[] {
   if (typeof data === 'string') {
@@ -43,15 +49,35 @@ export default function LiveFeedback() {
   const [repeatEnd, setRepeatEnd] = useState(1);
   const [isRepeatEnabled, setIsRepeatEnabled] = useState(false);
   const [feedbackScore, setFeedbackScore] = useState<number | null>(null);
+  const [resultData, setResultData] = useState<ResultData | null>(null);
+  const scoreHistory = useRef<number[]>([]);
   const feedbackState = getFeedbackState(feedbackScore);
   const { sendLandmarks } = useAiFeedbackSocket({
-    url: process.env.EXPO_PUBLIC_AI_WEBSOCKET_URL,
-    onFeedback: ({ score }) => setFeedbackScore(score),
+    url: `${process.env.EXPO_PUBLIC_AI_WEBSOCKET_URL}?reference_id=${encodeURIComponent(song.id)}`,
+    onFeedback: (feedback) => {
+      const score = Math.max(0, Math.min(100, feedback.score * 100));
+      scoreHistory.current = [...scoreHistory.current.slice(-59), score];
+      setFeedbackScore(score);
+      setResultData((previous) => ({
+        score,
+        dca: feedback.dca ?? previous?.dca,
+        pentagon: feedback.pentagon_scores ?? previous?.pentagon,
+      }));
+    },
   });
 
   const handlePlayPause = (newPlaying: boolean) => setIsPlaying(newPlaying);
   const handleProgressChange = useCallback((newProgress: number) => setProgress(newProgress), []);
   const handleRepeatToggle = (enabled: boolean) => setIsRepeatEnabled(enabled);
+  const showResult = () => router.replace({
+    pathname: '/result',
+    params: {
+      score: String(resultData?.score ?? feedbackScore ?? ''),
+      pentagon: resultData?.pentagon ? JSON.stringify(resultData.pentagon) : '',
+      highlights: resultData?.dca?.highlight_joints.join(',') ?? '',
+      timeline: scoreHistory.current.map((item) => Math.round(item)).join(','),
+    },
+  });
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -131,8 +157,8 @@ export default function LiveFeedback() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.wrapper}>
-        <View style={[styles.video_frame, { borderColor: feedbackState.color }]}>
+      <View style={[styles.wrapper, { backgroundColor: feedbackState.color }]}>
+        <View style={styles.video_frame}>
           <VideoBackground
             source={song.videoSource}
             style={styles.video}
@@ -143,7 +169,7 @@ export default function LiveFeedback() {
             repeatEnd={repeatEnd}
             isRepeatEnabled={isRepeatEnabled}
             onProgressUpdate={handleProgressChange}
-            onPlaybackEnd={() => router.replace('/result')}
+            onPlaybackEnd={showResult}
           />
           <RNMediapipe
             width={SCREEN_WIDTH}
@@ -198,7 +224,6 @@ const styles = StyleSheet.create({
   wrapper: {
     width: "100%",
     height: "100%",
-    backgroundColor: "red",
     padding: 8,
   },
   video_frame: {

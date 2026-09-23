@@ -1,40 +1,41 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-export type PoseLandmark = {
-  x: number;
-  y: number;
-  z?: number;
-  visibility?: number;
+export type PoseLandmark = { x: number; y: number; z?: number; visibility?: number };
+
+export type PentagonScores = {
+  final_score: number;
+  scores: Record<string, number>;
 };
 
-type FeedbackMessage = {
-  type: 'feedback';
+export type DcaFeedback = {
+  score_100: number;
+  highlight_joints: number[];
+};
+
+export type RealtimeFeedback = {
   score: number;
-  message?: string;
+  feedback?: string;
+  frame_idx?: number;
+  worst_joints?: number[];
+  rule_score?: number;
+  dca?: DcaFeedback;
+  pentagon_scores?: PentagonScores;
 };
 
 type ConnectionStatus = 'idle' | 'connecting' | 'connected' | 'disconnected';
-
-type UseAiFeedbackSocketOptions = {
-  url?: string;
-  onFeedback: (feedback: FeedbackMessage) => void;
-  minIntervalMs?: number;
-};
+type UseAiFeedbackSocketOptions = { url?: string; onFeedback: (feedback: RealtimeFeedback) => void; minIntervalMs?: number };
 
 export function useAiFeedbackSocket({ url, onFeedback, minIntervalMs = 100 }: UseAiFeedbackSocketOptions) {
   const socketRef = useRef<WebSocket | null>(null);
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSentAtRef = useRef(0);
+  const frameIndexRef = useRef(0);
   const onFeedbackRef = useRef(onFeedback);
   const [status, setStatus] = useState<ConnectionStatus>(url ? 'connecting' : 'idle');
   onFeedbackRef.current = onFeedback;
 
   useEffect(() => {
-    if (!url) {
-      setStatus('idle');
-      return;
-    }
-
+    if (!url) { setStatus('idle'); return; }
     let disposed = false;
     const connect = () => {
       setStatus('connecting');
@@ -43,10 +44,10 @@ export function useAiFeedbackSocket({ url, onFeedback, minIntervalMs = 100 }: Us
       socket.onopen = () => setStatus('connected');
       socket.onmessage = (event) => {
         try {
-          const message = JSON.parse(String(event.data)) as FeedbackMessage;
-          if (message.type === 'feedback' && Number.isFinite(message.score)) onFeedbackRef.current(message);
+          const message = JSON.parse(String(event.data)) as Partial<RealtimeFeedback>;
+          if (Number.isFinite(message.score)) onFeedbackRef.current(message as RealtimeFeedback);
         } catch {
-          // Ignore messages outside the feedback contract.
+          // Ignore messages outside the realtime protocol.
         }
       };
       socket.onclose = () => {
@@ -55,7 +56,6 @@ export function useAiFeedbackSocket({ url, onFeedback, minIntervalMs = 100 }: Us
         retryTimerRef.current = setTimeout(connect, 1000);
       };
     };
-
     connect();
     return () => {
       disposed = true;
@@ -65,18 +65,22 @@ export function useAiFeedbackSocket({ url, onFeedback, minIntervalMs = 100 }: Us
     };
   }, [url]);
 
+  const send = useCallback((payload: object) => {
+    const socket = socketRef.current;
+    if (!socket || socket.readyState !== WebSocket.OPEN) return false;
+    socket.send(JSON.stringify(payload));
+    return true;
+  }, []);
+
   const sendLandmarks = useCallback((landmarks: PoseLandmark[]) => {
     const now = Date.now();
-    const socket = socketRef.current;
-    if (!socket || socket.readyState !== WebSocket.OPEN || now - lastSentAtRef.current < minIntervalMs) return;
-
-    socket.send(JSON.stringify({
-      type: 'landmarks',
-      timestamp: now,
-      landmarks: landmarks.map((landmark, index) => ({ index, ...landmark })),
-    }));
-    lastSentAtRef.current = now;
-  }, [minIntervalMs]);
+    if (now - lastSentAtRef.current < minIntervalMs || landmarks.length !== 33) return false;
+    const keypoints = landmarks.map(({ x, y, z = 0 }) => [x, y, z]);
+    if (!keypoints.every((point) => point.every(Number.isFinite))) return false;
+    const sent = send({ keypoints, frame_idx: frameIndexRef.current++ });
+    if (sent) lastSentAtRef.current = now;
+    return sent;
+  }, [minIntervalMs, send]);
 
   return { status, sendLandmarks };
 }
