@@ -8,6 +8,7 @@ import MediaControls from "../../components/live-feedback/MediaControls";
 import SpeedControl from "../../components/live-feedback/SpeedControl";
 import VideoBackground from "../../components/live-feedback/VideoBackground";
 import { isFullBodyVisible } from '../../components/live-feedback/body-visibility';
+import { getDcaCoachingMessage } from '../../components/live-feedback/dca-coaching';
 import { getFeedbackState } from "../../components/live-feedback/feedback-score";
 import { getSong } from '../../data/songs';
 import { DcaFeedback, PentagonScores, PoseLandmark, useAiFeedbackSocket } from '../../hooks/use-ai-feedback-socket';
@@ -55,6 +56,7 @@ export default function LiveFeedback() {
   const scoreHistory = useRef<number[]>([]);
   const playbackTimeMsRef = useRef(0);
   const feedbackState = getFeedbackState(feedbackScore);
+  const dcaCoachingMessage = getDcaCoachingMessage(resultData?.dca?.highlight_joints);
   const { sendLandmarks } = useAiFeedbackSocket({
     url: `${process.env.EXPO_PUBLIC_AI_WEBSOCKET_URL}?reference_id=${encodeURIComponent(song.id)}`,
     onFeedback: (feedback) => {
@@ -195,6 +197,11 @@ export default function LiveFeedback() {
               <Text style={styles.body_warning_text}>전신이 보이도록 카메라에서 조금 뒤로 이동해 주세요.</Text>
             </View>
           )}
+          {hasFullBody && dcaCoachingMessage && (
+            <View style={styles.coaching_badge}>
+              <Text style={styles.coaching_text}>{dcaCoachingMessage}</Text>
+            </View>
+          )}
           <View style={[styles.feedback_badge, { backgroundColor: feedbackState.color }]}>
             <Text style={styles.feedback_label}>{feedbackState.label}</Text>
             {feedbackScore !== null && <Text style={styles.feedback_score}>{Math.round(feedbackScore)}점</Text>}
@@ -276,6 +283,22 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(178, 42, 42, 0.92)',
   },
   body_warning_text: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  coaching_badge: {
+    position: 'absolute',
+    top: 76,
+    left: 20,
+    right: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: 'rgba(48, 21, 64, 0.92)',
+  },
+  coaching_text: {
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '700',

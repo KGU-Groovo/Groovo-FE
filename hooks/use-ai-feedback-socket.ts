@@ -25,7 +25,7 @@ export type RealtimeFeedback = {
 type ConnectionStatus = 'idle' | 'connecting' | 'connected' | 'disconnected';
 type UseAiFeedbackSocketOptions = { url?: string; onFeedback: (feedback: RealtimeFeedback) => void; minIntervalMs?: number };
 
-export function useAiFeedbackSocket({ url, onFeedback, minIntervalMs = 100 }: UseAiFeedbackSocketOptions) {
+export function useAiFeedbackSocket({ url, onFeedback, minIntervalMs = 33 }: UseAiFeedbackSocketOptions) {
   const socketRef = useRef<WebSocket | null>(null);
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSentAtRef = useRef(0);
