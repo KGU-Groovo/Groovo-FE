@@ -72,12 +72,16 @@ export function useAiFeedbackSocket({ url, onFeedback, minIntervalMs = 100 }: Us
     return true;
   }, []);
 
-  const sendLandmarks = useCallback((landmarks: PoseLandmark[]) => {
+  const sendLandmarks = useCallback((landmarks: PoseLandmark[], timestampMs: number) => {
     const now = Date.now();
     if (now - lastSentAtRef.current < minIntervalMs || landmarks.length !== 33) return false;
     const keypoints = landmarks.map(({ x, y, z = 0 }) => [x, y, z]);
-    if (!keypoints.every((point) => point.every(Number.isFinite))) return false;
-    const sent = send({ keypoints, frame_idx: frameIndexRef.current++ });
+    if (!Number.isFinite(timestampMs) || !keypoints.every((point) => point.every(Number.isFinite))) return false;
+    const sent = send({
+      keypoints,
+      frame_idx: frameIndexRef.current++,
+      timestamp_ms: Math.max(0, Math.round(timestampMs)),
+    });
     if (sent) lastSentAtRef.current = now;
     return sent;
   }, [minIntervalMs, send]);

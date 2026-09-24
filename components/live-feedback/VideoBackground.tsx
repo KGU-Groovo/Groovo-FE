@@ -21,6 +21,7 @@ interface VideoBackgroundProps {
    * Used to keep UI timeline in sync with the video.
    */
   onProgressUpdate?: (progress: number) => void;
+  onPlaybackTimeUpdate?: (timestampMs: number) => void;
   onPlaybackEnd?: () => void;
 }
 
@@ -35,6 +36,7 @@ const VideoBackground: React.FC<VideoBackgroundProps> = ({
   repeatEnd = 1,
   isRepeatEnabled = false,
   onProgressUpdate,
+  onPlaybackTimeUpdate,
   onPlaybackEnd,
 }) => {
   const player = useVideoPlayer(source, (p) => {
@@ -46,6 +48,8 @@ const VideoBackground: React.FC<VideoBackgroundProps> = ({
   // Keep a stable reference to the callback so the interval isn't recreated
   const onProgressUpdateRef = useRef(onProgressUpdate);
   onProgressUpdateRef.current = onProgressUpdate;
+  const onPlaybackTimeUpdateRef = useRef(onPlaybackTimeUpdate);
+  onPlaybackTimeUpdateRef.current = onPlaybackTimeUpdate;
   const onPlaybackEndRef = useRef(onPlaybackEnd);
   onPlaybackEndRef.current = onPlaybackEnd;
   const repeatRef = useRef({ isRepeatEnabled, repeatStart, repeatEnd });
@@ -104,9 +108,11 @@ const VideoBackground: React.FC<VideoBackgroundProps> = ({
         if (repeat.isRepeatEnabled && currentProgress >= repeat.repeatEnd) {
           player.currentTime = repeat.repeatStart * player.duration;
           onProgressUpdateRef.current?.(repeat.repeatStart);
+          onPlaybackTimeUpdateRef.current?.(player.currentTime * 1000);
           return;
         }
         onProgressUpdateRef.current?.(currentProgress);
+        onPlaybackTimeUpdateRef.current?.(player.currentTime * 1000);
       }
     }, 300);
     return () => clearInterval(interval);
