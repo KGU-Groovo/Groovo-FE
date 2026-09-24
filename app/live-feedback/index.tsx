@@ -112,7 +112,7 @@ export default function LiveFeedback() {
     setLandmarksData(points);
     const visible = isFullBodyVisible(points);
     setHasFullBody(visible);
-    if (visible) sendLandmarks(points, playbackTimeMsRef.current);
+    if (visible && isPlaying) sendLandmarks(points, playbackTimeMsRef.current);
   };
 
   const renderLandmarks = () => {
