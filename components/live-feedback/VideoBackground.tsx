@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { Image, ImageSourcePropType, StyleSheet, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Image, ImageSourcePropType, StyleSheet, View } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 
 interface VideoBackgroundProps {
@@ -47,11 +47,14 @@ const VideoBackground: React.FC<VideoBackgroundProps> = ({
   onPlaybackTimeUpdate,
   onPlaybackEnd,
 }) => {
+  const [isLoading, setIsLoading] = useState(true);
   const player = useVideoPlayer(source, (p) => {
     p.loop = loop;
     p.muted = true;
     if (autoPlay) p.play();
   });
+
+  useEffect(() => setIsLoading(true), [source]);
 
   // Keep a stable reference to the callback so the interval isn't recreated
   const onProgressUpdateRef = useRef(onProgressUpdate);
@@ -134,10 +137,21 @@ const VideoBackground: React.FC<VideoBackgroundProps> = ({
         style={[StyleSheet.absoluteFillObject, { transform: [{ scaleX: isMirrored ? -1 : 1 }] }]}
         contentFit="cover"
         nativeControls={false}
+        onFirstFrameRender={() => setIsLoading(false)}
       />
+      {isLoading && <View pointerEvents="none" style={styles.loading_overlay}><ActivityIndicator size="large" color="#FF43BD" /></View>}
       {children}
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  loading_overlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.18)',
+  },
+});
 
 export default VideoBackground;
