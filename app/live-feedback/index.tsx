@@ -59,7 +59,7 @@ export default function LiveFeedback() {
   const playbackTimeMsRef = useRef(0);
   const feedbackState = getFeedbackState(feedbackScore);
   const dcaCoachingMessage = getDcaCoachingMessage(resultData?.dca?.highlight_joints);
-  const { sendLandmarks } = useAiFeedbackSocket({
+  const { status: connectionStatus, sendLandmarks } = useAiFeedbackSocket({
     url: `${process.env.EXPO_PUBLIC_AI_WEBSOCKET_URL}?reference_id=${encodeURIComponent(song.id)}`,
     onFeedback: (feedback) => {
       const score = Math.max(0, Math.min(100, feedback.score * 100));
@@ -72,6 +72,11 @@ export default function LiveFeedback() {
       }));
     },
   });
+  const connectionLabel = connectionStatus === 'connecting'
+    ? 'AI 분석 서버 연결 중'
+    : connectionStatus === 'disconnected'
+      ? '연결이 끊겼어요. 재연결 중…'
+      : feedbackState.label;
 
   const handlePlayPause = (newPlaying: boolean) => setIsPlaying(newPlaying);
   const handleProgressChange = useCallback((newProgress: number) => setProgress(newProgress), []);
@@ -200,8 +205,8 @@ export default function LiveFeedback() {
             </View>
           )}
           <View style={[styles.feedback_badge, { backgroundColor: feedbackState.color }]}>
-            <Text style={styles.feedback_label}>{feedbackState.label}</Text>
-            {feedbackScore !== null && <Text style={styles.feedback_score}>{Math.round(feedbackScore)}점</Text>}
+            <Text style={styles.feedback_label}>{connectionLabel}</Text>
+            {connectionStatus === 'connected' && feedbackScore !== null && <Text style={styles.feedback_score}>{Math.round(feedbackScore)}점</Text>}
           </View>
           <Pressable style={styles.overlay} onPress={handlePress} />
           <Pressable
