@@ -1,12 +1,15 @@
 import React, { useEffect, useRef } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Image, ImageSourcePropType, StyleSheet, View } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 
 interface VideoBackgroundProps {
   source: any;
+  posterSource?: ImageSourcePropType;
   style?: any;
   children?: React.ReactNode;
   isPlaying?: boolean;
+  autoPlay?: boolean;
+  loop?: boolean;
   playbackRate?: number;
   /**
    * Progress as a fraction (0 to 1) of the video duration.
@@ -27,9 +30,12 @@ interface VideoBackgroundProps {
 
 const VideoBackground: React.FC<VideoBackgroundProps> = ({
   source,
+  posterSource,
   style,
   children,
   isPlaying = true,
+  autoPlay = true,
+  loop = false,
   playbackRate = 1.0,
   progress,
   repeatStart = 0,
@@ -40,9 +46,9 @@ const VideoBackground: React.FC<VideoBackgroundProps> = ({
   onPlaybackEnd,
 }) => {
   const player = useVideoPlayer(source, (p) => {
-    p.loop = false;
+    p.loop = loop;
     p.muted = true;
-    p.play();
+    if (autoPlay) p.play();
   });
 
   // Keep a stable reference to the callback so the interval isn't recreated
@@ -120,6 +126,7 @@ const VideoBackground: React.FC<VideoBackgroundProps> = ({
 
   return (
     <View style={style}>
+      {posterSource && <Image source={posterSource} style={StyleSheet.absoluteFillObject} resizeMode="cover" />}
       <VideoView
         player={player}
         style={StyleSheet.absoluteFillObject}

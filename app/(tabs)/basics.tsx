@@ -6,9 +6,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 const categories = ['전체', '스텝', '아이솔레이션', '웨이브'] as const;
 const lessons = [
-  { title: '가슴 아이솔레이션', meta: '2 Steps · 54s', level: '초급', category: '아이솔레이션' },
-  { title: '어깨 아이솔레이션', meta: '4 Steps · 41s', level: '초급', category: '아이솔레이션' },
-  { title: '바디 아이솔레이션', meta: '2 Steps · 34s', level: '중급', category: '스텝' },
+  { title: '가슴 아이솔레이션', meta: '2 Steps · 54s', level: '초급', category: '아이솔레이션', imageUri: 'https://images.pexels.com/photos/6221578/pexels-photo-6221578.jpeg?auto=compress&cs=tinysrgb&w=900' },
+  { title: '어깨 아이솔레이션', meta: '4 Steps · 41s', level: '초급', category: '아이솔레이션', imageUri: 'https://images.pexels.com/photos/8853793/pexels-photo-8853793.jpeg?auto=compress&cs=tinysrgb&w=900' },
+  { title: '바디 아이솔레이션', meta: '2 Steps · 34s', level: '중급', category: '스텝', imageUri: 'https://images.pexels.com/photos/6926533/pexels-photo-6926533.jpeg?auto=compress&cs=tinysrgb&w=900' },
 ];
 
 export default function BasicsScreen() {
@@ -22,8 +22,8 @@ export default function BasicsScreen() {
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>{categories.map((item) => <Pressable key={item} onPress={() => setSelectedCategory(item)} style={[styles.filter, selectedCategory === item && styles.selectedFilter]}><Text style={[styles.filterText, selectedCategory === item && styles.selectedText]}>{item}</Text></Pressable>)}</ScrollView>
     </View>
     <ScrollView contentContainerStyle={styles.content}>
-      {visibleLessons.map(({ title, meta, level }) => <View key={title} style={styles.lesson}>
-        <Image source={require('../../assets/images/Ghost-Dancer.png')} style={styles.lessonImage} />
+      {visibleLessons.map(({ title, meta, level, imageUri }) => <View key={title} style={styles.lesson}>
+        <Image source={{ uri: imageUri }} style={styles.lessonImage} />
         <View style={styles.lessonBody}><View style={styles.lessonTitleRow}><Text style={styles.lessonTitle}>{title}</Text><Text style={styles.level}>{level}</Text></View><Text style={styles.meta}>{meta}</Text><Pressable style={styles.start} onPress={() => router.push('/live-feedback')}><Text style={styles.startText}>연습 시작하기</Text></Pressable></View>
       </View>)}
       {visibleLessons.length === 0 && <Text style={styles.empty}>준비 중인 기본기입니다.</Text>}

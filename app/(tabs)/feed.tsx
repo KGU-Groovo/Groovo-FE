@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Dimensions, FlatList, ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Dimensions, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import VideoBackground from '../../components/live-feedback/VideoBackground';
 import { songs } from '../../data/songs';
 
 const reelMeta = [
@@ -17,6 +18,7 @@ export default function FeedScreen() {
   const router = useRouter();
   const [likedReel, setLikedReel] = useState<string | null>(null);
   const [reelHeight, setReelHeight] = useState(Dimensions.get('window').height);
+  const [activeReelId, setActiveReelId] = useState<string | null>(reels[0]?.song.id ?? null);
   return <View style={styles.screen} onLayout={(event) => setReelHeight(event.nativeEvent.layout.height)}><FlatList
     data={reels}
     style={styles.list}
@@ -26,9 +28,13 @@ export default function FeedScreen() {
     bounces={false}
     overScrollMode="never"
     showsVerticalScrollIndicator={false}
+    onMomentumScrollEnd={(event) => {
+      const index = Math.round(event.nativeEvent.contentOffset.y / reelHeight);
+      setActiveReelId(reels[index]?.song.id ?? null);
+    }}
     renderItem={({ item }) => {
       const liked = likedReel === item.song.id;
-      return <ImageBackground source={item.song.albumCover} style={[styles.reel, { height: reelHeight }]} imageStyle={styles.reelImage}>
+      return <VideoBackground source={item.song.videoSource} posterSource={item.song.albumCover} style={[styles.reel, { height: reelHeight }]} isPlaying={item.song.id === activeReelId} autoPlay={item.song.id === activeReelId} loop>
         <View style={styles.shade} />
         <View style={styles.top}><Text style={styles.title}>요즘 인기 챌린지</Text><Text style={styles.chip}>♬ {item.song.title} · {item.song.artist}</Text></View>
         <View style={styles.actions}>
@@ -37,13 +43,13 @@ export default function FeedScreen() {
           <View style={styles.action}><Ionicons name="share-social-outline" size={29} color="#FFF" /><Text style={styles.actionText}>공유</Text></View>
         </View>
         <View style={styles.caption}><Text style={styles.user}>{item.user}</Text><Text style={styles.copy}>{item.song.title} {item.caption}</Text><Pressable style={styles.learn} onPress={() => router.push({ pathname: '/live-feedback', params: { songId: item.song.id } })}><Text style={styles.learnText}>이 안무 배우기</Text></Pressable></View>
-      </ImageBackground>;
+      </VideoBackground>;
     }}
   /></View>;
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#2A0733' }, list: { flex: 1, backgroundColor: '#2A0733' }, listContent: { backgroundColor: '#2A0733' }, reel: { justifyContent: 'space-between', padding: 20, paddingTop: 52, paddingBottom: 110, backgroundColor: '#2A0733' }, reelImage: { opacity: .62, resizeMode: 'cover' }, shade: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(10, 2, 15, .38)' },
+  screen: { flex: 1, backgroundColor: '#2A0733' }, list: { flex: 1, backgroundColor: '#2A0733' }, listContent: { backgroundColor: '#2A0733' }, reel: { justifyContent: 'space-between', padding: 20, paddingTop: 52, paddingBottom: 110, backgroundColor: '#2A0733' }, shade: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(10, 2, 15, .38)' },
   top: { gap: 13 }, title: { color: '#FFF', fontSize: 21, fontWeight: '800' }, chip: { alignSelf: 'flex-start', color: '#FFF', backgroundColor: 'rgba(255,255,255,.18)', borderRadius: 22, paddingHorizontal: 14, paddingVertical: 10, overflow: 'hidden' },
   actions: { position: 'absolute', right: 20, bottom: 280, gap: 22 }, action: { alignItems: 'center', gap: 5 }, actionText: { color: '#FFF', fontSize: 12, fontWeight: '700' },
   caption: { gap: 9, paddingRight: 60 }, user: { color: '#FFF', fontSize: 19, fontWeight: '800' }, copy: { color: '#FFF', fontSize: 15 }, audio: { color: '#50D8FF', fontWeight: '700' }, learn: { backgroundColor: '#000', borderRadius: 8, alignItems: 'center', padding: 16, marginTop: 7 }, learnText: { color: '#FFF', fontSize: 18, fontWeight: '800' },
