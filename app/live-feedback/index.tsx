@@ -130,10 +130,6 @@ export default function LiveFeedback() {
       let x = point.x;
       let y = point.y;
 
-      const originalX = point.x.toFixed(2);
-      const originalY = point.y.toFixed(2);
-      const originalZ = point.z !== undefined && point.z !== null ? point.z.toFixed(2) : '0.00';
-
       if (Math.abs(x) <= 2 && Math.abs(y) <= 2) {
         x = x * SCREEN_WIDTH;
         y = y * SCREEN_HEIGHT;
@@ -142,9 +138,6 @@ export default function LiveFeedback() {
       return (
         <View key={index} style={[styles.landmark_container, { left: x, top: y }]}>
           <View style={styles.landmark_dot} />
-          <Text style={styles.landmark_text}>
-            {`${index} (${originalX}, ${originalY}, ${originalZ})`}
-          </Text>
         </View>
       );
     });
@@ -376,15 +369,5 @@ const styles = StyleSheet.create({
     backgroundColor: '#00FF00',
     borderWidth: 1,
     borderColor: '#000000',
-  },
-  landmark_text: {
-    color: '#FFFFFF',
-    fontSize: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    padding: 2,
-    marginLeft: 6,
-    marginTop: -6,
-    borderRadius: 2,
-    overflow: 'hidden',
   },
 });
