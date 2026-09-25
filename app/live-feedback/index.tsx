@@ -39,6 +39,26 @@ function toPoseLandmarks(data: unknown): PoseLandmark[] {
   ));
 }
 
+function getCameraAspectRatio(data: unknown): number | undefined {
+  if (typeof data === 'string') {
+    try {
+      return getCameraAspectRatio(JSON.parse(data));
+    } catch {
+      return undefined;
+    }
+  }
+  if (!data || typeof data !== 'object') return undefined;
+
+  const payload = data as { additionalData?: unknown; nativeEvent?: unknown };
+  const dimensions = payload.additionalData as { width?: unknown; height?: unknown } | undefined;
+  const width = Number(dimensions?.width);
+  const height = Number(dimensions?.height);
+  if (Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0) {
+    return width / height;
+  }
+  return getCameraAspectRatio(payload.nativeEvent);
+}
+
 export default function LiveFeedback() {
   const router = useRouter();
   const { songId } = useLocalSearchParams<{ songId?: string }>();
@@ -121,10 +141,13 @@ export default function LiveFeedback() {
 
   const handlePoseLandmarks = (landmarks: any) => {
     const points = toPoseLandmarks(landmarks);
+    const cameraAspectRatio = getCameraAspectRatio(landmarks);
     setLandmarksData(points);
     const visible = isFullBodyVisible(points, { width: SCREEN_WIDTH, height: SCREEN_HEIGHT });
     setHasFullBody(visible);
-    if (visible && isUserPlaying) sendLandmarks(points, playbackTimeMsRef.current);
+    if (visible && isUserPlaying) {
+      sendLandmarks(points, playbackTimeMsRef.current, cameraAspectRatio);
+    }
   };
 
   const renderLandmarks = () => {
