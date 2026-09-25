@@ -8,6 +8,7 @@ interface VideoBackgroundProps {
   style?: any;
   children?: React.ReactNode;
   isPlaying?: boolean;
+  isMirrored?: boolean;
   autoPlay?: boolean;
   loop?: boolean;
   playbackRate?: number;
@@ -34,6 +35,7 @@ const VideoBackground: React.FC<VideoBackgroundProps> = ({
   style,
   children,
   isPlaying = true,
+  isMirrored = false,
   autoPlay = true,
   loop = false,
   playbackRate = 1.0,
@@ -129,7 +131,7 @@ const VideoBackground: React.FC<VideoBackgroundProps> = ({
       {posterSource && <Image source={posterSource} style={StyleSheet.absoluteFillObject} resizeMode="cover" />}
       <VideoView
         player={player}
-        style={StyleSheet.absoluteFillObject}
+        style={[StyleSheet.absoluteFillObject, { transform: [{ scaleX: isMirrored ? -1 : 1 }] }]}
         contentFit="cover"
         nativeControls={false}
       />

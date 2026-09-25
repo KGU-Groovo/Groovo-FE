@@ -1,4 +1,5 @@
 import { RNMediapipe } from '@thinksys/react-native-mediapipe';
+import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button, Dimensions, Pressable, StyleSheet, Text, View } from "react-native";
@@ -53,6 +54,7 @@ export default function LiveFeedback() {
   const [feedbackScore, setFeedbackScore] = useState<number | null>(null);
   const [resultData, setResultData] = useState<ResultData | null>(null);
   const [hasFullBody, setHasFullBody] = useState(true);
+  const [isMirrorMode, setIsMirrorMode] = useState(false);
   const scoreHistory = useRef<number[]>([]);
   const playbackTimeMsRef = useRef(0);
   const feedbackState = getFeedbackState(feedbackScore);
@@ -171,6 +173,7 @@ export default function LiveFeedback() {
             source={song.videoSource}
             style={styles.video}
             isPlaying={isPlaying}
+            isMirrored={isMirrorMode}
             playbackRate={selectedSpeed}
             progress={progress}
             repeatStart={repeatStart}
@@ -208,6 +211,15 @@ export default function LiveFeedback() {
             {feedbackScore !== null && <Text style={styles.feedback_score}>{Math.round(feedbackScore)}점</Text>}
           </View>
           <Pressable style={styles.overlay} onPress={handlePress} />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="거울 모드"
+            onPress={() => setIsMirrorMode((enabled) => !enabled)}
+            style={[styles.mirror_button, isMirrorMode && styles.mirror_button_active]}
+          >
+            <Ionicons name="swap-horizontal" size={20} color="#FFF" />
+            <Text style={styles.mirror_button_text}>거울</Text>
+          </Pressable>
           {showControls && (
             <View pointerEvents="box-none" style={styles.controls}>
               <SpeedControl
@@ -272,6 +284,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 999,
+  },
+  mirror_button: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    zIndex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: 'rgba(30, 15, 38, 0.88)',
+  },
+  mirror_button_active: {
+    backgroundColor: '#B61AAD',
+  },
+  mirror_button_text: {
+    color: '#FFF',
+    fontSize: 13,
+    fontWeight: '700',
   },
   body_warning: {
     position: 'absolute',
