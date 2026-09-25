@@ -11,8 +11,10 @@ import VideoBackground from "../../components/live-feedback/VideoBackground";
 import { isFullBodyVisible } from '../../components/live-feedback/body-visibility';
 import { getDcaCoachingMessage } from '../../components/live-feedback/dca-coaching';
 import { getFeedbackState } from "../../components/live-feedback/feedback-score";
+import { getSessionStatusMessage } from '../../components/live-feedback/session-status';
 import { getSong } from '../../data/songs';
 import { DcaFeedback, PentagonScores, PoseLandmark, useAiFeedbackSocket } from '../../hooks/use-ai-feedback-socket';
+import { useAnalysisSession } from '../../hooks/use-analysis-session';
 
 type ResultData = {
   score: number;
@@ -59,8 +61,10 @@ export default function LiveFeedback() {
   const playbackTimeMsRef = useRef(0);
   const feedbackState = getFeedbackState(feedbackScore);
   const dcaCoachingMessage = getDcaCoachingMessage(resultData?.dca?.highlight_joints);
-  const { sendLandmarks } = useAiFeedbackSocket({
-    url: `${process.env.EXPO_PUBLIC_AI_WEBSOCKET_URL}?reference_id=${encodeURIComponent(song.id)}`,
+  // 학습 1회 = BE session 1개: 화면 진입 시 session을 만들고 `${ws_url}?token=${ws_token}`으로 연결한다.
+  const analysisSession = useAnalysisSession(song.id);
+  const { sendLandmarks, status: socketStatus, closeInfo, disconnect } = useAiFeedbackSocket({
+    session: analysisSession.session,
     onFeedback: (feedback) => {
       const score = Math.max(0, Math.min(100, feedback.score * 100));
       scoreHistory.current = [...scoreHistory.current.slice(-59), score];
@@ -76,16 +80,25 @@ export default function LiveFeedback() {
   const handlePlayPause = (newPlaying: boolean) => setIsPlaying(newPlaying);
   const handleProgressChange = useCallback((newProgress: number) => setProgress(newProgress), []);
   const handleRepeatToggle = (enabled: boolean) => setIsRepeatEnabled(enabled);
-  const showResult = () => router.replace({
-    pathname: '/result',
-    params: {
-      songId: song.id,
-      score: String(resultData?.score ?? feedbackScore ?? ''),
-      pentagon: resultData?.pentagon ? JSON.stringify(resultData.pentagon) : '',
-      highlights: resultData?.dca?.highlight_joints.join(',') ?? '',
-      timeline: scoreHistory.current.map((item) => Math.round(item)).join(','),
-    },
+  const sessionStatusMessage = getSessionStatusMessage({
+    sessionStatus: analysisSession.status,
+    sessionError: analysisSession.error,
+    socketStatus,
+    closeCode: closeInfo?.code,
   });
+  const showResult = () => {
+    disconnect();
+    router.replace({
+      pathname: '/result',
+      params: {
+        songId: song.id,
+        score: String(resultData?.score ?? feedbackScore ?? ''),
+        pentagon: resultData?.pentagon ? JSON.stringify(resultData.pentagon) : '',
+        highlights: resultData?.dca?.highlight_joints.join(',') ?? '',
+        timeline: scoreHistory.current.map((item) => Math.round(item)).join(','),
+      },
+    });
+  };
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -204,6 +217,11 @@ export default function LiveFeedback() {
           {hasFullBody && dcaCoachingMessage && (
             <View style={styles.coaching_badge}>
               <Text style={styles.coaching_text}>{dcaCoachingMessage}</Text>
+            </View>
+          )}
+          {sessionStatusMessage && (
+            <View style={styles.session_status}>
+              <Text style={styles.session_status_text}>{sessionStatusMessage}</Text>
             </View>
           )}
           <View style={[styles.feedback_badge, { backgroundColor: feedbackState.color }]}>
@@ -331,6 +349,22 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 12,
     backgroundColor: 'rgba(48, 21, 64, 0.92)',
+  },
+  session_status: {
+    position: 'absolute',
+    bottom: 24,
+    left: 20,
+    right: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: 'rgba(15, 23, 42, 0.88)',
+  },
+  session_status_text: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+    textAlign: 'center',
   },
   coaching_text: {
     color: '#FFFFFF',
