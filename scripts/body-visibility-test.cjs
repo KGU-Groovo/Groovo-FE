@@ -12,4 +12,12 @@ assert.equal(isFullBodyVisible(ankleHidden), false);
 const landmarksWithoutVisibility = fullBody.map(({ x, y }) => ({ x, y }));
 assert.equal(isFullBodyVisible(landmarksWithoutVisibility), true);
 
+const ankleOutsideFrame = fullBody.map((landmark) => ({ ...landmark }));
+ankleOutsideFrame[27].y = 0.99;
+assert.equal(isFullBodyVisible(ankleOutsideFrame), false);
+
+const missingHipCoordinates = fullBody.map((landmark) => ({ ...landmark }));
+delete missingHipCoordinates[23].x;
+assert.equal(isFullBodyVisible(missingHipCoordinates), false);
+
 console.log('body visibility verified');

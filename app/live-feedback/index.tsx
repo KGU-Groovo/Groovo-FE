@@ -9,6 +9,7 @@ import MediaControls from "../../components/live-feedback/MediaControls";
 import SpeedControl from "../../components/live-feedback/SpeedControl";
 import VideoBackground from "../../components/live-feedback/VideoBackground";
 import { isFullBodyVisible } from '../../components/live-feedback/body-visibility';
+import { shouldPlay } from '../../components/live-feedback/playback-state';
 import { getDcaCoachingMessage } from '../../components/live-feedback/dca-coaching';
 import { getFeedbackState } from "../../components/live-feedback/feedback-score";
 import { getSong } from '../../data/songs';
@@ -46,7 +47,7 @@ export default function LiveFeedback() {
   const [showControls, setShowControls] = useState(false);
   const [selectedSpeed, setSelectedSpeed] = useState(1.0);
   const [landmarksData, setLandmarksData] = useState<any>(null);
-  const [isPlaying, setIsPlaying] = useState(true);
+  const [isUserPlaying, setIsUserPlaying] = useState(true);
   const [progress, setProgress] = useState(0);
   const [repeatStart, setRepeatStart] = useState(0);
   const [repeatEnd, setRepeatEnd] = useState(1);
@@ -57,9 +58,10 @@ export default function LiveFeedback() {
   const [isMirrorMode, setIsMirrorMode] = useState(false);
   const scoreHistory = useRef<number[]>([]);
   const playbackTimeMsRef = useRef(0);
+  const isPlaying = shouldPlay(isUserPlaying, hasFullBody);
   const feedbackState = getFeedbackState(feedbackScore);
   const dcaCoachingMessage = getDcaCoachingMessage(resultData?.dca?.highlight_joints);
-  const { status: connectionStatus, sendLandmarks } = useAiFeedbackSocket({
+  const { status: connectionStatus, connectionError, sendLandmarks } = useAiFeedbackSocket({
     url: `${process.env.EXPO_PUBLIC_AI_WEBSOCKET_URL}?reference_id=${encodeURIComponent(song.id)}`,
     onFeedback: (feedback) => {
       const score = Math.max(0, Math.min(100, feedback.score * 100));
@@ -72,13 +74,13 @@ export default function LiveFeedback() {
       }));
     },
   });
-  const connectionLabel = connectionStatus === 'connecting'
+  const connectionLabel = connectionError ?? (connectionStatus === 'connecting'
     ? 'AI 분석 서버 연결 중'
     : connectionStatus === 'disconnected'
       ? '연결이 끊겼어요. 재연결 중…'
-      : feedbackState.label;
+      : feedbackState.label);
 
-  const handlePlayPause = (newPlaying: boolean) => setIsPlaying(newPlaying);
+  const handlePlayPause = (newPlaying: boolean) => setIsUserPlaying(newPlaying);
   const handleProgressChange = useCallback((newProgress: number) => setProgress(newProgress), []);
   const handleRepeatToggle = (enabled: boolean) => setIsRepeatEnabled(enabled);
   const showResult = () => router.replace({
@@ -120,9 +122,9 @@ export default function LiveFeedback() {
   const handlePoseLandmarks = (landmarks: any) => {
     const points = toPoseLandmarks(landmarks);
     setLandmarksData(points);
-    const visible = isFullBodyVisible(points);
+    const visible = isFullBodyVisible(points, { width: SCREEN_WIDTH, height: SCREEN_HEIGHT });
     setHasFullBody(visible);
-    if (visible && isPlaying) sendLandmarks(points, playbackTimeMsRef.current);
+    if (visible && isUserPlaying) sendLandmarks(points, playbackTimeMsRef.current);
   };
 
   const renderLandmarks = () => {
@@ -196,7 +198,7 @@ export default function LiveFeedback() {
           {renderLandmarks()}
           {!hasFullBody && (
             <View style={styles.body_warning}>
-              <Text style={styles.body_warning_text}>전신이 보이도록 카메라에서 조금 뒤로 이동해 주세요.</Text>
+              <Text style={styles.body_warning_text}>전신이 보이도록 뒤로 이동해 주세요. 분석을 일시정지했어요.</Text>
             </View>
           )}
           {hasFullBody && dcaCoachingMessage && (

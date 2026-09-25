@@ -14,6 +14,7 @@ export type DcaFeedback = {
 
 export type RealtimeFeedback = {
   score: number;
+  error?: string;
   feedback?: string;
   frame_idx?: number;
   worst_joints?: number[];
@@ -32,6 +33,7 @@ export function useAiFeedbackSocket({ url, onFeedback, minIntervalMs = 33 }: Use
   const frameIndexRef = useRef(0);
   const onFeedbackRef = useRef(onFeedback);
   const [status, setStatus] = useState<ConnectionStatus>(url ? 'connecting' : 'idle');
+  const [connectionError, setConnectionError] = useState<string | null>(null);
   onFeedbackRef.current = onFeedback;
 
   useEffect(() => {
@@ -41,18 +43,23 @@ export function useAiFeedbackSocket({ url, onFeedback, minIntervalMs = 33 }: Use
       setStatus('connecting');
       const socket = new WebSocket(url);
       socketRef.current = socket;
-      socket.onopen = () => setStatus('connected');
+      socket.onopen = () => {
+        setConnectionError(null);
+        setStatus('connected');
+      };
       socket.onmessage = (event) => {
         try {
           const message = JSON.parse(String(event.data)) as Partial<RealtimeFeedback>;
+          if (typeof message.error === 'string') setConnectionError(message.error);
           if (Number.isFinite(message.score)) onFeedbackRef.current(message as RealtimeFeedback);
         } catch {
           // Ignore messages outside the realtime protocol.
         }
       };
-      socket.onclose = () => {
+      socket.onclose = (event) => {
         if (disposed) return;
         setStatus('disconnected');
+        if (event.code === 4003 || event.code === 4004) return;
         retryTimerRef.current = setTimeout(connect, 1000);
       };
     };
@@ -86,5 +93,5 @@ export function useAiFeedbackSocket({ url, onFeedback, minIntervalMs = 33 }: Use
     return sent;
   }, [minIntervalMs, send]);
 
-  return { status, sendLandmarks };
+  return { status, connectionError, sendLandmarks };
 }

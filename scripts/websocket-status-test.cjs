@@ -3,7 +3,7 @@ const { readFileSync } = require('node:fs');
 
 const screen = readFileSync('app/live-feedback/index.tsx', 'utf8');
 
-assert.match(screen, /const \{ status: connectionStatus, sendLandmarks \} = useAiFeedbackSocket/);
+assert.match(screen, /const \{ status: connectionStatus, connectionError, sendLandmarks \} = useAiFeedbackSocket/);
 assert.match(screen, /connectionStatus === 'connecting'/);
 assert.match(screen, /AI 분석 서버 연결 중/);
 assert.match(screen, /connectionStatus === 'disconnected'/);
