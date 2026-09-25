@@ -77,6 +77,7 @@ export default function LiveFeedback() {
   const showResult = () => router.replace({
     pathname: '/result',
     params: {
+      songId: song.id,
       score: String(resultData?.score ?? feedbackScore ?? ''),
       pentagon: resultData?.pentagon ? JSON.stringify(resultData.pentagon) : '',
       highlights: resultData?.dca?.highlight_joints.join(',') ?? '',

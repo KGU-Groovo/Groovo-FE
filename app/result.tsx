@@ -61,7 +61,7 @@ function timelineColor(score: number) {
 
 export default function ResultScreen() {
   const router = useRouter();
-  const { score: scoreParam, pentagon: pentagonParam, timeline: timelineParam } = useLocalSearchParams<{ score?: string; pentagon?: string; timeline?: string }>();
+  const { score: scoreParam, pentagon: pentagonParam, timeline: timelineParam, songId: songIdParam } = useLocalSearchParams<{ score?: string; pentagon?: string; timeline?: string; songId?: string }>();
   const score = Number(scoreParam);
   const finalScore = Number.isFinite(score) ? score : null;
   const feedback = getFeedbackState(finalScore);
@@ -80,7 +80,7 @@ export default function ResultScreen() {
       <View style={styles.legend}><Text style={{ color: '#FFF' }}><Text style={styles.green}>●</Text> Good</Text><Text style={{ color: '#FFF' }}><Text style={styles.yellow}>●</Text> Check</Text><Text style={{ color: '#FFF' }}><Text style={styles.red}>●</Text> Retry</Text></View>
     </View>
     <View style={styles.actions}>
-      <Pressable style={styles.action} onPress={() => router.back()}><Ionicons name="reload" size={20} color="#FFF" /><Text style={styles.actionText}>재도전하기</Text></Pressable>
+      <Pressable style={styles.action} onPress={() => router.replace({ pathname: '/live-feedback', params: { songId: songIdParam } })}><Ionicons name="reload" size={20} color="#FFF" /><Text style={styles.actionText}>재도전하기</Text></Pressable>
       <Pressable style={styles.action} onPress={() => router.replace('/(tabs)')}><Ionicons name="home-outline" size={20} color="#FFF" /><Text style={styles.actionText}>홈으로 돌아가기</Text></Pressable>
     </View>
   </ScrollView>;
