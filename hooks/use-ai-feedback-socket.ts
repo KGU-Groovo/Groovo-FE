@@ -14,6 +14,8 @@ export type DcaFeedback = {
   highlight_joints: number[];
 };
 
+export type RealtimeWarning = { message: string; recommendPause: boolean };
+
 export type RealtimeFeedback = {
   type?: string;
   score: number;
@@ -26,12 +28,19 @@ export type RealtimeFeedback = {
   dca?: DcaFeedback;
   pentagon_scores?: PentagonScores;
   session_summary?: SessionSummary | null;
+  warning?: string;
+  recommend_pause?: boolean;
 };
 
 type ConnectionStatus = 'idle' | 'connecting' | 'connected' | 'disconnected';
-type UseAiFeedbackSocketOptions = { url?: string; onFeedback: (feedback: RealtimeFeedback) => void; minIntervalMs?: number };
+type UseAiFeedbackSocketOptions = {
+  url?: string;
+  onFeedback: (feedback: RealtimeFeedback) => void;
+  onWarning?: (warning: RealtimeWarning) => void;
+  minIntervalMs?: number;
+};
 
-export function useAiFeedbackSocket({ url, onFeedback, minIntervalMs = 33 }: UseAiFeedbackSocketOptions) {
+export function useAiFeedbackSocket({ url, onFeedback, onWarning, minIntervalMs = 33 }: UseAiFeedbackSocketOptions) {
   const socketRef = useRef<WebSocket | null>(null);
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const retryAttemptRef = useRef(0);
@@ -40,9 +49,11 @@ export function useAiFeedbackSocket({ url, onFeedback, minIntervalMs = 33 }: Use
   const bodyVisibilityRef = useRef<boolean | null>(null);
   const completionRef = useRef<{ resolve: (summary: SessionSummary | null) => void; timeout: ReturnType<typeof setTimeout> } | null>(null);
   const onFeedbackRef = useRef(onFeedback);
+  const onWarningRef = useRef(onWarning);
   const [status, setStatus] = useState<ConnectionStatus>(url ? 'connecting' : 'idle');
   const [connectionError, setConnectionError] = useState<string | null>(null);
   onFeedbackRef.current = onFeedback;
+  onWarningRef.current = onWarning;
 
   const settleCompletion = useCallback((summary: SessionSummary | null) => {
     const pending = completionRef.current;
@@ -69,6 +80,13 @@ export function useAiFeedbackSocket({ url, onFeedback, minIntervalMs = 33 }: Use
         try {
           const message = JSON.parse(String(event.data)) as Partial<RealtimeFeedback>;
           if (typeof message.error === 'string') setConnectionError(message.error);
+          if (typeof message.warning === 'string') {
+            onWarningRef.current?.({
+              message: message.warning,
+              recommendPause: message.recommend_pause === true,
+            });
+            return;
+          }
           if (message.type === 'session_summary') {
             const summary = message.session_summary;
             settleCompletion(

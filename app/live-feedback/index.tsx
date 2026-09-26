@@ -74,6 +74,7 @@ export default function LiveFeedback() {
   const [isRepeatEnabled, setIsRepeatEnabled] = useState(false);
   const [feedbackScore, setFeedbackScore] = useState<number | null>(null);
   const [resultData, setResultData] = useState<ResultData | null>(null);
+  const [networkWarning, setNetworkWarning] = useState<string | null>(null);
   const [hasFullBody, setHasFullBody] = useState(false);
   const [isMirrorMode, setIsMirrorMode] = useState(false);
   const scoreHistory = useRef<{ timestampMs: number; score: number }[]>([]);
@@ -84,6 +85,7 @@ export default function LiveFeedback() {
   const { status: connectionStatus, connectionError, sendLandmarks, sendBodyVisibility, completeSession } = useAiFeedbackSocket({
     url: `${process.env.EXPO_PUBLIC_AI_WEBSOCKET_URL}?reference_id=${encodeURIComponent(song.id)}`,
     onFeedback: (feedback) => {
+      setNetworkWarning(null);
       const score = Math.max(0, Math.min(100, feedback.score * 100));
       if (Number.isFinite(feedback.timestamp_ms)) {
         scoreHistory.current = [
@@ -97,8 +99,12 @@ export default function LiveFeedback() {
         dca: feedback.dca ?? previous?.dca,
       }));
     },
+    onWarning: ({ message, recommendPause }) => {
+      setNetworkWarning(message);
+      if (recommendPause) setIsUserPlaying(false);
+    },
   });
-  const connectionLabel = connectionError ?? (connectionStatus === 'connecting'
+  const connectionLabel = connectionError ?? networkWarning ?? (connectionStatus === 'connecting'
     ? 'AI 분석 서버 연결 중'
     : connectionStatus === 'disconnected'
       ? '연결이 끊겼어요. 재연결 중…'
@@ -242,7 +248,7 @@ export default function LiveFeedback() {
           )}
           <View style={[styles.feedback_badge, { backgroundColor: feedbackState.color }]}>
             <Text style={styles.feedback_label}>{connectionLabel}</Text>
-            {connectionStatus === 'connected' && feedbackScore !== null && <Text style={styles.feedback_score}>{Math.round(feedbackScore)}점</Text>}
+            {connectionStatus === 'connected' && feedbackScore !== null && !networkWarning && <Text style={styles.feedback_score}>{Math.round(feedbackScore)}점</Text>}
           </View>
           <Pressable style={styles.overlay} onPress={handlePress} />
           <Pressable
