@@ -15,7 +15,7 @@ export default function RootLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="live-feedback" options={{ headerShown: false }} />
-      <Stack.Screen name="result" />
+      <Stack.Screen name="result" options={{ gestureEnabled: false }} />
     </Stack>
   );
 }
