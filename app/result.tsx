@@ -81,7 +81,7 @@ export default function ResultScreen() {
     <View style={styles.header}></View>
     <Text style={styles.pill}>PERFORMANCE COMPLETE</Text>
     <View style={styles.scoreRing}><Text style={styles.scoreNumber}>{finalScore === null ? '—' : Math.round(finalScore)}</Text><Text style={styles.scoreLabel}>SCORE</Text></View>
-    <Text style={styles.message}>{finalScore === null ? '분석 결과를 받지 못했어요.' : `${feedback.label} · 전체 흐름을 확인해 보세요.`}</Text>
+    <Text style={styles.message}>{finalScore === null ? '분석 데이터가 부족해요. 전신이 보이도록 1초 이상 연습해 주세요.' : `${feedback.label} · 전체 흐름을 확인해 보세요.`}</Text>
     <View style={styles.panel}><PentagonChart pentagon={pentagon} />{!pentagon && <Text style={styles.empty}>오각형 분석은 30프레임 이상 감지되면 표시됩니다.</Text>}</View>
     <View style={styles.timelinePanel}>
       <Text style={styles.timelineTitle}>퍼포먼스 타임라인</Text>

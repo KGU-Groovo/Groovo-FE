@@ -14,12 +14,11 @@ import { shouldPlay } from '../../components/live-feedback/playback-state';
 import { getDcaCoachingMessage } from '../../components/live-feedback/dca-coaching';
 import { getFeedbackState } from "../../components/live-feedback/feedback-score";
 import { getSong } from '../../data/songs';
-import { DcaFeedback, PentagonScores, PoseLandmark, useAiFeedbackSocket } from '../../hooks/use-ai-feedback-socket';
+import { DcaFeedback, PoseLandmark, useAiFeedbackSocket } from '../../hooks/use-ai-feedback-socket';
 
 type ResultData = {
   score: number;
   dca?: DcaFeedback;
-  pentagon?: PentagonScores;
 };
 
 function toPoseLandmarks(data: unknown): PoseLandmark[] {
@@ -82,7 +81,7 @@ export default function LiveFeedback() {
   const isPlaying = shouldPlay(isUserPlaying, hasFullBody);
   const feedbackState = getFeedbackState(feedbackScore);
   const dcaCoachingMessage = getDcaCoachingMessage(resultData?.dca?.highlight_joints);
-  const { status: connectionStatus, connectionError, sendLandmarks, sendBodyVisibility } = useAiFeedbackSocket({
+  const { status: connectionStatus, connectionError, sendLandmarks, sendBodyVisibility, completeSession } = useAiFeedbackSocket({
     url: `${process.env.EXPO_PUBLIC_AI_WEBSOCKET_URL}?reference_id=${encodeURIComponent(song.id)}`,
     onFeedback: (feedback) => {
       const score = Math.max(0, Math.min(100, feedback.score * 100));
@@ -96,7 +95,6 @@ export default function LiveFeedback() {
       setResultData((previous) => ({
         score,
         dca: feedback.dca ?? previous?.dca,
-        pentagon: feedback.pentagon_scores ?? previous?.pentagon,
       }));
     },
   });
@@ -109,16 +107,22 @@ export default function LiveFeedback() {
   const handlePlayPause = (newPlaying: boolean) => setIsUserPlaying(newPlaying);
   const handleProgressChange = useCallback((newProgress: number) => setProgress(newProgress), []);
   const handleRepeatToggle = (enabled: boolean) => setIsRepeatEnabled(enabled);
-  const showResult = () => router.replace({
+  const isCompletingRef = useRef(false);
+  const showResult = async () => {
+    if (isCompletingRef.current) return;
+    isCompletingRef.current = true;
+    const sessionSummary = await completeSession();
+    router.replace({
     pathname: '/result',
     params: {
       songId: song.id,
-      score: String(resultData?.score ?? feedbackScore ?? ''),
-      pentagon: resultData?.pentagon ? JSON.stringify(resultData.pentagon) : '',
+      score: sessionSummary ? String(sessionSummary.final_score) : '',
+      pentagon: sessionSummary ? JSON.stringify({ final_score: sessionSummary.final_score, scores: sessionSummary.scores }) : '',
       highlights: resultData?.dca?.highlight_joints.join(',') ?? '',
       timeline: JSON.stringify(buildPerformanceTimeline(scoreHistory.current)),
     },
   });
+  };
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');

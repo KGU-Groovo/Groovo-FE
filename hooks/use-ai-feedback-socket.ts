@@ -7,12 +7,15 @@ export type PentagonScores = {
   scores: Record<string, number>;
 };
 
+export type SessionSummary = PentagonScores & { window_count: number };
+
 export type DcaFeedback = {
   score_100: number;
   highlight_joints: number[];
 };
 
 export type RealtimeFeedback = {
+  type?: string;
   score: number;
   error?: string;
   feedback?: string;
@@ -22,6 +25,7 @@ export type RealtimeFeedback = {
   rule_score?: number;
   dca?: DcaFeedback;
   pentagon_scores?: PentagonScores;
+  session_summary?: SessionSummary | null;
 };
 
 type ConnectionStatus = 'idle' | 'connecting' | 'connected' | 'disconnected';
@@ -33,10 +37,19 @@ export function useAiFeedbackSocket({ url, onFeedback, minIntervalMs = 33 }: Use
   const lastSentAtRef = useRef(0);
   const frameIndexRef = useRef(0);
   const bodyVisibilityRef = useRef<boolean | null>(null);
+  const completionRef = useRef<{ resolve: (summary: SessionSummary | null) => void; timeout: ReturnType<typeof setTimeout> } | null>(null);
   const onFeedbackRef = useRef(onFeedback);
   const [status, setStatus] = useState<ConnectionStatus>(url ? 'connecting' : 'idle');
   const [connectionError, setConnectionError] = useState<string | null>(null);
   onFeedbackRef.current = onFeedback;
+
+  const settleCompletion = useCallback((summary: SessionSummary | null) => {
+    const pending = completionRef.current;
+    if (!pending) return;
+    clearTimeout(pending.timeout);
+    completionRef.current = null;
+    pending.resolve(summary);
+  }, []);
 
   useEffect(() => {
     if (!url) { setStatus('idle'); return; }
@@ -54,6 +67,15 @@ export function useAiFeedbackSocket({ url, onFeedback, minIntervalMs = 33 }: Use
         try {
           const message = JSON.parse(String(event.data)) as Partial<RealtimeFeedback>;
           if (typeof message.error === 'string') setConnectionError(message.error);
+          if (message.type === 'session_summary') {
+            const summary = message.session_summary;
+            settleCompletion(
+              summary && Number.isFinite(summary.final_score) && Number.isInteger(summary.window_count)
+                ? summary as SessionSummary
+                : null,
+            );
+            return;
+          }
           if (Number.isFinite(message.score)) onFeedbackRef.current(message as RealtimeFeedback);
         } catch {
           // Ignore messages outside the realtime protocol.
@@ -70,10 +92,11 @@ export function useAiFeedbackSocket({ url, onFeedback, minIntervalMs = 33 }: Use
     return () => {
       disposed = true;
       if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+      settleCompletion(null);
       socketRef.current?.close();
       socketRef.current = null;
     };
-  }, [url]);
+  }, [settleCompletion, url]);
 
   const send = useCallback((payload: object) => {
     const socket = socketRef.current;
@@ -112,5 +135,16 @@ export function useAiFeedbackSocket({ url, onFeedback, minIntervalMs = 33 }: Use
     return sent;
   }, [send]);
 
-  return { status, connectionError, sendLandmarks, sendBodyVisibility };
+  const completeSession = useCallback(() => new Promise<SessionSummary | null>((resolve) => {
+    if (!send({ type: 'complete' })) {
+      resolve(null);
+      return;
+    }
+    completionRef.current = {
+      resolve,
+      timeout: setTimeout(() => settleCompletion(null), 1500),
+    };
+  }), [send, settleCompletion]);
+
+  return { status, connectionError, sendLandmarks, sendBodyVisibility, completeSession };
 }
