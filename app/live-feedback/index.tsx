@@ -9,6 +9,7 @@ import MediaControls from "../../components/live-feedback/MediaControls";
 import SpeedControl from "../../components/live-feedback/SpeedControl";
 import VideoBackground from "../../components/live-feedback/VideoBackground";
 import { isFullBodyVisible } from '../../components/live-feedback/body-visibility';
+import { buildPerformanceTimeline } from '../../components/live-feedback/performance-timeline';
 import { shouldPlay } from '../../components/live-feedback/playback-state';
 import { getDcaCoachingMessage } from '../../components/live-feedback/dca-coaching';
 import { getFeedbackState } from "../../components/live-feedback/feedback-score";
@@ -74,18 +75,23 @@ export default function LiveFeedback() {
   const [isRepeatEnabled, setIsRepeatEnabled] = useState(false);
   const [feedbackScore, setFeedbackScore] = useState<number | null>(null);
   const [resultData, setResultData] = useState<ResultData | null>(null);
-  const [hasFullBody, setHasFullBody] = useState(true);
+  const [hasFullBody, setHasFullBody] = useState(false);
   const [isMirrorMode, setIsMirrorMode] = useState(false);
-  const scoreHistory = useRef<number[]>([]);
+  const scoreHistory = useRef<{ timestampMs: number; score: number }[]>([]);
   const playbackTimeMsRef = useRef(0);
   const isPlaying = shouldPlay(isUserPlaying, hasFullBody);
   const feedbackState = getFeedbackState(feedbackScore);
   const dcaCoachingMessage = getDcaCoachingMessage(resultData?.dca?.highlight_joints);
-  const { status: connectionStatus, connectionError, sendLandmarks } = useAiFeedbackSocket({
+  const { status: connectionStatus, connectionError, sendLandmarks, sendBodyVisibility } = useAiFeedbackSocket({
     url: `${process.env.EXPO_PUBLIC_AI_WEBSOCKET_URL}?reference_id=${encodeURIComponent(song.id)}`,
     onFeedback: (feedback) => {
       const score = Math.max(0, Math.min(100, feedback.score * 100));
-      scoreHistory.current = [...scoreHistory.current.slice(-59), score];
+      if (Number.isFinite(feedback.timestamp_ms)) {
+        scoreHistory.current = [
+          ...scoreHistory.current.slice(-119),
+          { timestampMs: feedback.timestamp_ms!, score },
+        ];
+      }
       setFeedbackScore(score);
       setResultData((previous) => ({
         score,
@@ -110,7 +116,7 @@ export default function LiveFeedback() {
       score: String(resultData?.score ?? feedbackScore ?? ''),
       pentagon: resultData?.pentagon ? JSON.stringify(resultData.pentagon) : '',
       highlights: resultData?.dca?.highlight_joints.join(',') ?? '',
-      timeline: scoreHistory.current.map((item) => Math.round(item)).join(','),
+      timeline: JSON.stringify(buildPerformanceTimeline(scoreHistory.current)),
     },
   });
 
@@ -145,6 +151,7 @@ export default function LiveFeedback() {
     setLandmarksData(points);
     const visible = isFullBodyVisible(points, { width: SCREEN_WIDTH, height: SCREEN_HEIGHT });
     setHasFullBody(visible);
+    sendBodyVisibility(visible);
     if (visible && isUserPlaying) {
       sendLandmarks(points, playbackTimeMsRef.current, cameraAspectRatio);
     }

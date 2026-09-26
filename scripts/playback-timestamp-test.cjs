@@ -7,7 +7,7 @@ const socket = readFileSync('hooks/use-ai-feedback-socket.ts', 'utf8');
 
 assert.match(video, /onPlaybackTimeUpdate/);
 assert.match(screen, /onPlaybackTimeUpdate/);
-assert.match(screen, /sendLandmarks\(points, playbackTimeMsRef\.current\)/);
+assert.match(screen, /sendLandmarks\(points, playbackTimeMsRef\.current, cameraAspectRatio\)/);
 assert.match(socket, /timestamp_ms: Math\.max\(0, Math\.round\(timestampMs\)\)/);
 assert.match(socket, /minIntervalMs = 33/);
 

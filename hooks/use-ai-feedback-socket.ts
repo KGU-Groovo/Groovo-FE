@@ -17,6 +17,7 @@ export type RealtimeFeedback = {
   error?: string;
   feedback?: string;
   frame_idx?: number;
+  timestamp_ms?: number;
   worst_joints?: number[];
   rule_score?: number;
   dca?: DcaFeedback;
@@ -31,6 +32,7 @@ export function useAiFeedbackSocket({ url, onFeedback, minIntervalMs = 33 }: Use
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSentAtRef = useRef(0);
   const frameIndexRef = useRef(0);
+  const bodyVisibilityRef = useRef<boolean | null>(null);
   const onFeedbackRef = useRef(onFeedback);
   const [status, setStatus] = useState<ConnectionStatus>(url ? 'connecting' : 'idle');
   const [connectionError, setConnectionError] = useState<string | null>(null);
@@ -44,6 +46,7 @@ export function useAiFeedbackSocket({ url, onFeedback, minIntervalMs = 33 }: Use
       const socket = new WebSocket(url);
       socketRef.current = socket;
       socket.onopen = () => {
+        bodyVisibilityRef.current = null;
         setConnectionError(null);
         setStatus('connected');
       };
@@ -102,5 +105,12 @@ export function useAiFeedbackSocket({ url, onFeedback, minIntervalMs = 33 }: Use
     return sent;
   }, [minIntervalMs, send]);
 
-  return { status, connectionError, sendLandmarks };
+  const sendBodyVisibility = useCallback((visible: boolean) => {
+    if (bodyVisibilityRef.current === visible) return false;
+    const sent = send({ body_visible: visible });
+    if (sent) bodyVisibilityRef.current = visible;
+    return sent;
+  }, [send]);
+
+  return { status, connectionError, sendLandmarks, sendBodyVisibility };
 }

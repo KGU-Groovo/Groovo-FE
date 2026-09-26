@@ -21,7 +21,15 @@ function parsePentagon(value?: string): PentagonResult | null {
   }
 }
 
-function parseTimeline(value?: string): number[] {
+function parseTimeline(value?: string): Array<number | null> {
+  try {
+    const parsed = JSON.parse(value ?? '');
+    if (Array.isArray(parsed)) {
+      return parsed.map((item) => Number.isFinite(item) ? Number(item) : null);
+    }
+  } catch {
+    // 이전 앱 버전의 쉼표 구분 타임라인을 호환한다.
+  }
   return (value ?? '').split(',').map(Number).filter((item) => Number.isFinite(item));
 }
 
@@ -53,7 +61,8 @@ function PentagonChart({ pentagon }: { pentagon: PentagonResult | null }) {
   </View>;
 }
 
-function timelineColor(score: number) {
+function timelineColor(score: number | null) {
+  if (score === null) return '#4A3B50';
   if (score >= 80) return '#00BC27';
   if (score >= 60) return '#F3B000';
   return '#E52A42';
