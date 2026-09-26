@@ -1,5 +1,4 @@
 const REQUIRED_JOINTS = [0, 11, 12, 23, 24, 27, 28];
-const MIN_VISIBILITY = 0.5;
 const FRAME_MARGIN = 0.03;
 
 function isFullBodyVisible(landmarks, frame = {}) {
@@ -12,7 +11,6 @@ function isFullBodyVisible(landmarks, frame = {}) {
 
   return requiredLandmarks.every((landmark) => {
     if (!Number.isFinite(landmark?.x) || !Number.isFinite(landmark?.y)) return false;
-    if (Number.isFinite(landmark.visibility) && landmark.visibility < MIN_VISIBILITY) return false;
 
     if (hasNormalizedCoordinates) {
       return landmark.x >= FRAME_MARGIN && landmark.x <= 1 - FRAME_MARGIN

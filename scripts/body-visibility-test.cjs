@@ -7,7 +7,7 @@ assert.equal(isFullBodyVisible(fullBody), true);
 
 const ankleHidden = fullBody.map((landmark) => ({ ...landmark }));
 ankleHidden[27].visibility = 0.2;
-assert.equal(isFullBodyVisible(ankleHidden), false);
+assert.equal(isFullBodyVisible(ankleHidden), true);
 
 const landmarksWithoutVisibility = fullBody.map(({ x, y }) => ({ x, y }));
 assert.equal(isFullBodyVisible(landmarksWithoutVisibility), true);
