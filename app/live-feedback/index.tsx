@@ -123,8 +123,11 @@ export default function LiveFeedback() {
     pathname: '/result',
     params: {
       songId: song.id,
-      score: sessionSummary ? String(sessionSummary.final_score) : '',
-      pentagon: sessionSummary ? JSON.stringify({ final_score: sessionSummary.final_score, scores: sessionSummary.scores }) : '',
+      score: sessionSummary?.final_score === null || !sessionSummary ? '' : String(sessionSummary.final_score),
+      pentagon: sessionSummary?.final_score === null || !sessionSummary ? '' : JSON.stringify({ final_score: sessionSummary.final_score, scores: sessionSummary.scores }),
+      analyzedFrameCount: String(sessionSummary?.analyzed_frame_count ?? 0),
+      windowCount: String(sessionSummary?.window_count ?? 0),
+      confidence: sessionSummary?.confidence ?? 'low',
       highlights: resultData?.dca?.highlight_joints.join(',') ?? '',
       timeline: JSON.stringify(buildPerformanceTimeline(scoreHistory.current)),
     },

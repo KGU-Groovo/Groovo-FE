@@ -68,11 +68,17 @@ function timelineColor(score: number | null) {
   return '#E52A42';
 }
 
+function confidenceLabel(confidence?: string) {
+  return confidence === 'high' ? '높음' : confidence === 'medium' ? '보통' : '낮음';
+}
+
 export default function ResultScreen() {
   const router = useRouter();
-  const { score: scoreParam, pentagon: pentagonParam, timeline: timelineParam, songId: songIdParam } = useLocalSearchParams<{ score?: string; pentagon?: string; timeline?: string; songId?: string }>();
+  const { score: scoreParam, pentagon: pentagonParam, timeline: timelineParam, songId: songIdParam, analyzedFrameCount, windowCount, confidence } = useLocalSearchParams<{ score?: string; pentagon?: string; timeline?: string; songId?: string; analyzedFrameCount?: string; windowCount?: string; confidence?: string }>();
   const score = Number(scoreParam);
   const finalScore = Number.isFinite(score) ? score : null;
+  const analyzedFrames = Math.max(0, Number(analyzedFrameCount) || 0);
+  const analyzedWindows = Math.max(0, Number(windowCount) || 0);
   const feedback = getFeedbackState(finalScore);
   const pentagon = parsePentagon(pentagonParam);
   const timeline = parseTimeline(timelineParam);
@@ -82,6 +88,7 @@ export default function ResultScreen() {
     <Text style={styles.pill}>PERFORMANCE COMPLETE</Text>
     <View style={styles.scoreRing}><Text style={styles.scoreNumber}>{finalScore === null ? '—' : Math.round(finalScore)}</Text><Text style={styles.scoreLabel}>SCORE</Text></View>
     <Text style={styles.message}>{finalScore === null ? '분석 데이터가 부족해요. 전신이 보이도록 1초 이상 연습해 주세요.' : `${feedback.label} · 전체 흐름을 확인해 보세요.`}</Text>
+    <Text style={styles.analysisMeta}>분석 프레임 {analyzedFrames}개 · 유효 구간 {analyzedWindows}개 · 신뢰도 {confidenceLabel(confidence)}</Text>
     <View style={styles.panel}><PentagonChart pentagon={pentagon} />{!pentagon && <Text style={styles.empty}>오각형 분석은 30프레임 이상 감지되면 표시됩니다.</Text>}</View>
     <View style={styles.timelinePanel}>
       <Text style={styles.timelineTitle}>퍼포먼스 타임라인</Text>
@@ -98,7 +105,7 @@ export default function ResultScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#17000D' }, content: { alignItems: 'center', paddingHorizontal: 23, paddingBottom: 42, gap: 20 }, header: { alignSelf: 'stretch', paddingTop: 56, height: 94 },
   pill: { overflow: 'hidden', backgroundColor: '#CE00DE', color: '#FFF', borderRadius: 22, paddingHorizontal: 20, paddingVertical: 10, fontSize: 11, fontWeight: '900', letterSpacing: 1.3 },
-  scoreRing: { width: 128, height: 128, borderRadius: 64, borderWidth: 2, borderColor: '#B87FE4', alignItems: 'center', justifyContent: 'center', shadowColor: '#E000C9', shadowOpacity: 0.72, shadowRadius: 22, elevation: 12 }, scoreNumber: { color: '#FFF', fontSize: 52, fontWeight: '900', lineHeight: 58 }, scoreLabel: { color: '#FFF', fontSize: 12, fontWeight: '800', letterSpacing: 1.2 }, message: { color: '#FFF', fontSize: 15, textAlign: 'center' },
+  scoreRing: { width: 128, height: 128, borderRadius: 64, borderWidth: 2, borderColor: '#B87FE4', alignItems: 'center', justifyContent: 'center', shadowColor: '#E000C9', shadowOpacity: 0.72, shadowRadius: 22, elevation: 12 }, scoreNumber: { color: '#FFF', fontSize: 52, fontWeight: '900', lineHeight: 58 }, scoreLabel: { color: '#FFF', fontSize: 12, fontWeight: '800', letterSpacing: 1.2 }, message: { color: '#FFF', fontSize: 15, textAlign: 'center' }, analysisMeta: { color: '#CBB6CF', fontSize: 12, textAlign: 'center', marginTop: -10 },
   panel: { width: '100%', minHeight: 304, borderRadius: 36, backgroundColor: '#30203B', alignItems: 'center', justifyContent: 'center', paddingVertical: 20 }, chartWrap: { width: 240, height: 240, position: 'relative' }, metric: { position: 'absolute', width: 72, alignItems: 'center' }, metricLabel: { color: '#FFB4D5', fontSize: 14, fontWeight: '700' }, metricValue: { color: '#FFF', fontSize: 15, fontWeight: '800' }, empty: { color: '#CBB6CF', fontSize: 12, textAlign: 'center', paddingHorizontal: 20 },
   timelinePanel: { width: '100%', backgroundColor: '#30203B', borderRadius: 18, padding: 16, gap: 12 }, timelineTitle: { color: '#FFF', fontWeight: '800', fontSize: 13 }, timeline: { height: 28, flexDirection: 'row', overflow: 'hidden', borderRadius: 2, backgroundColor: '#4A3B50' }, timelineBar: { flex: 1, marginRight: 1 }, legend: { flexDirection: 'row', justifyContent: 'space-between' }, green: { color: '#00BC27' }, yellow: { color: '#F3B000' }, red: { color: '#E52A42' },
   actions: { flexDirection: 'row', width: '100%', gap: 10 }, action: { flex: 1, borderRadius: 24, borderWidth: 1, borderColor: '#9A20B3', paddingVertical: 14, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 7 }, actionText: { color: '#FFF', fontSize: 14, fontWeight: '800' },
