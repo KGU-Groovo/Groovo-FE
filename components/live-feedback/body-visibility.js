@@ -1,6 +1,18 @@
 const REQUIRED_JOINTS = [0, 11, 12, 23, 24, 27, 28];
 const FRAME_MARGIN = 0.03;
 
+function updateBodyVisibilityState(state, detected) {
+  const visibleFrames = detected ? state.visibleFrames + 1 : 0;
+  const hiddenFrames = detected ? 0 : state.hiddenFrames + 1;
+  return {
+    isFullBody: detected
+      ? state.isFullBody || visibleFrames >= 2
+      : state.isFullBody && hiddenFrames < 3,
+    visibleFrames,
+    hiddenFrames,
+  };
+}
+
 function isFullBodyVisible(landmarks, frame = {}) {
   if (!Array.isArray(landmarks) || landmarks.length !== 33) return false;
 
@@ -23,4 +35,4 @@ function isFullBodyVisible(landmarks, frame = {}) {
   });
 }
 
-module.exports = { isFullBodyVisible };
+module.exports = { isFullBodyVisible, updateBodyVisibilityState };

@@ -8,7 +8,7 @@ import { useCameraPermission } from 'react-native-vision-camera';
 import MediaControls from "../../components/live-feedback/MediaControls";
 import SpeedControl from "../../components/live-feedback/SpeedControl";
 import VideoBackground from "../../components/live-feedback/VideoBackground";
-import { isFullBodyVisible } from '../../components/live-feedback/body-visibility';
+import { isFullBodyVisible, updateBodyVisibilityState } from '../../components/live-feedback/body-visibility';
 import { buildPerformanceTimeline } from '../../components/live-feedback/performance-timeline';
 import { shouldPlay } from '../../components/live-feedback/playback-state';
 import { getDcaCoachingMessage } from '../../components/live-feedback/dca-coaching';
@@ -78,6 +78,7 @@ export default function LiveFeedback() {
   const [hasFullBody, setHasFullBody] = useState(false);
   const [isMirrorMode, setIsMirrorMode] = useState(false);
   const scoreHistory = useRef<{ timestampMs: number; score: number }[]>([]);
+  const bodyVisibilityState = useRef({ isFullBody: false, visibleFrames: 0, hiddenFrames: 0 });
   const playbackTimeMsRef = useRef(0);
   const isPlaying = shouldPlay(isUserPlaying, hasFullBody);
   const feedbackState = getFeedbackState(feedbackScore);
@@ -159,10 +160,12 @@ export default function LiveFeedback() {
     const points = toPoseLandmarks(landmarks);
     const cameraAspectRatio = getCameraAspectRatio(landmarks);
     setLandmarksData(points);
-    const visible = isFullBodyVisible(points, { width: SCREEN_WIDTH, height: SCREEN_HEIGHT });
-    setHasFullBody(visible);
-    sendBodyVisibility(visible);
-    if (visible && isUserPlaying) {
+    const detected = isFullBodyVisible(points, { width: SCREEN_WIDTH, height: SCREEN_HEIGHT });
+    const visible = updateBodyVisibilityState(bodyVisibilityState.current, detected);
+    bodyVisibilityState.current = visible;
+    setHasFullBody(visible.isFullBody);
+    sendBodyVisibility(visible.isFullBody);
+    if (visible.isFullBody && isUserPlaying) {
       sendLandmarks(points, playbackTimeMsRef.current, cameraAspectRatio);
     }
   };
