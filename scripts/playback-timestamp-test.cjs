@@ -10,5 +10,6 @@ assert.match(screen, /onPlaybackTimeUpdate/);
 assert.match(screen, /sendLandmarks\(points, playbackTimeMsRef\.current, cameraAspectRatio\)/);
 assert.match(socket, /timestamp_ms: Math\.max\(0, Math\.round\(timestampMs\)\)/);
 assert.match(socket, /minIntervalMs = 33/);
+assert.match(video, /}, 100\);/);
 
 console.log('playback timestamp contract verified');

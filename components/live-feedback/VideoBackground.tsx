@@ -125,7 +125,7 @@ const VideoBackground: React.FC<VideoBackgroundProps> = ({
         onProgressUpdateRef.current?.(currentProgress);
         onPlaybackTimeUpdateRef.current?.(player.currentTime * 1000);
       }
-    }, 300);
+    }, 100);
     return () => clearInterval(interval);
   }, [player]);
 
