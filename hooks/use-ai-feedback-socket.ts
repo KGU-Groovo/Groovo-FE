@@ -34,6 +34,7 @@ type UseAiFeedbackSocketOptions = { url?: string; onFeedback: (feedback: Realtim
 export function useAiFeedbackSocket({ url, onFeedback, minIntervalMs = 33 }: UseAiFeedbackSocketOptions) {
   const socketRef = useRef<WebSocket | null>(null);
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryAttemptRef = useRef(0);
   const lastSentAtRef = useRef(0);
   const frameIndexRef = useRef(0);
   const bodyVisibilityRef = useRef<boolean | null>(null);
@@ -60,6 +61,7 @@ export function useAiFeedbackSocket({ url, onFeedback, minIntervalMs = 33 }: Use
       socketRef.current = socket;
       socket.onopen = () => {
         bodyVisibilityRef.current = null;
+        retryAttemptRef.current = 0;
         setConnectionError(null);
         setStatus('connected');
       };
@@ -85,7 +87,10 @@ export function useAiFeedbackSocket({ url, onFeedback, minIntervalMs = 33 }: Use
         if (disposed) return;
         setStatus('disconnected');
         if (event.code === 4003 || event.code === 4004) return;
-        retryTimerRef.current = setTimeout(connect, 1000);
+        retryTimerRef.current = setTimeout(
+          connect,
+          Math.min(10000, 1000 * 2 ** retryAttemptRef.current++),
+        );
       };
     };
     connect();

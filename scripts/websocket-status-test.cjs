@@ -10,4 +10,9 @@ assert.match(screen, /connectionStatus === 'disconnected'/);
 assert.match(screen, /연결이 끊겼어요\. 재연결 중/);
 assert.match(screen, /connectionStatus === 'connected' && feedbackScore !== null/);
 
+const hook = readFileSync('hooks/use-ai-feedback-socket.ts', 'utf8');
+assert.match(hook, /retryAttemptRef/);
+assert.match(hook, /Math\.min\(10000, 1000 \* 2 \*\* retryAttemptRef\.current\+\+\)/);
+assert.match(hook, /retryAttemptRef\.current = 0/);
+
 console.log('websocket connection status contract verified');
