@@ -7,7 +7,13 @@ export type PentagonScores = {
   scores: Record<string, number>;
 };
 
-export type SessionSummary = PentagonScores & { window_count: number };
+export type SessionSummary = {
+  final_score: number | null;
+  scores: Record<string, number>;
+  window_count: number;
+  analyzed_frame_count: number;
+  confidence: 'low' | 'medium' | 'high';
+};
 
 export type DcaFeedback = {
   score_100: number;
@@ -90,7 +96,11 @@ export function useAiFeedbackSocket({ url, onFeedback, onWarning, minIntervalMs 
           if (message.type === 'session_summary') {
             const summary = message.session_summary;
             settleCompletion(
-              summary && Number.isFinite(summary.final_score) && Number.isInteger(summary.window_count)
+              summary
+                && (summary.final_score === null || Number.isFinite(summary.final_score))
+                && Number.isInteger(summary.window_count)
+                && Number.isInteger(summary.analyzed_frame_count)
+                && ['low', 'medium', 'high'].includes(summary.confidence)
                 ? summary as SessionSummary
                 : null,
             );
