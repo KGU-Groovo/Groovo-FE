@@ -1,5 +1,14 @@
 export const songs = [
   {
+    id: "bad",
+    title: "BAD",
+    artist: "ATEEZ (에이티즈)",
+    noteCount: 4,
+    views: 421,
+    albumCover: require("../assets/song/bad/albumCover.webp"),
+    videoSource: require("../assets/song/bad/dance.mp4"),
+  },
+  {
     id: "hollywood-action",
     title: "Hollywood Action",
     artist: "BOYNEXTDOOR(보이넥스트도어)",

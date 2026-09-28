@@ -1,12 +1,16 @@
-import React, { useEffect, useRef } from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Image, ImageSourcePropType, StyleSheet, View } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 
 interface VideoBackgroundProps {
   source: any;
+  posterSource?: ImageSourcePropType;
   style?: any;
   children?: React.ReactNode;
   isPlaying?: boolean;
+  isMirrored?: boolean;
+  autoPlay?: boolean;
+  loop?: boolean;
   playbackRate?: number;
   /**
    * Progress as a fraction (0 to 1) of the video duration.
@@ -21,31 +25,42 @@ interface VideoBackgroundProps {
    * Used to keep UI timeline in sync with the video.
    */
   onProgressUpdate?: (progress: number) => void;
+  onPlaybackTimeUpdate?: (timestampMs: number) => void;
   onPlaybackEnd?: () => void;
 }
 
 const VideoBackground: React.FC<VideoBackgroundProps> = ({
   source,
+  posterSource,
   style,
   children,
   isPlaying = true,
+  isMirrored = false,
+  autoPlay = true,
+  loop = false,
   playbackRate = 1.0,
   progress,
   repeatStart = 0,
   repeatEnd = 1,
   isRepeatEnabled = false,
   onProgressUpdate,
+  onPlaybackTimeUpdate,
   onPlaybackEnd,
 }) => {
+  const [isLoading, setIsLoading] = useState(true);
   const player = useVideoPlayer(source, (p) => {
-    p.loop = false;
+    p.loop = loop;
     p.muted = true;
-    p.play();
+    if (autoPlay) p.play();
   });
+
+  useEffect(() => setIsLoading(true), [source]);
 
   // Keep a stable reference to the callback so the interval isn't recreated
   const onProgressUpdateRef = useRef(onProgressUpdate);
   onProgressUpdateRef.current = onProgressUpdate;
+  const onPlaybackTimeUpdateRef = useRef(onPlaybackTimeUpdate);
+  onPlaybackTimeUpdateRef.current = onPlaybackTimeUpdate;
   const onPlaybackEndRef = useRef(onPlaybackEnd);
   onPlaybackEndRef.current = onPlaybackEnd;
   const repeatRef = useRef({ isRepeatEnabled, repeatStart, repeatEnd });
@@ -104,25 +119,39 @@ const VideoBackground: React.FC<VideoBackgroundProps> = ({
         if (repeat.isRepeatEnabled && currentProgress >= repeat.repeatEnd) {
           player.currentTime = repeat.repeatStart * player.duration;
           onProgressUpdateRef.current?.(repeat.repeatStart);
+          onPlaybackTimeUpdateRef.current?.(player.currentTime * 1000);
           return;
         }
         onProgressUpdateRef.current?.(currentProgress);
+        onPlaybackTimeUpdateRef.current?.(player.currentTime * 1000);
       }
-    }, 300);
+    }, 100);
     return () => clearInterval(interval);
   }, [player]);
 
   return (
     <View style={style}>
+      {posterSource && <Image source={posterSource} style={StyleSheet.absoluteFillObject} resizeMode="cover" />}
       <VideoView
         player={player}
-        style={StyleSheet.absoluteFillObject}
+        style={[StyleSheet.absoluteFillObject, { transform: [{ scaleX: isMirrored ? -1 : 1 }] }]}
         contentFit="cover"
         nativeControls={false}
+        onFirstFrameRender={() => setIsLoading(false)}
       />
+      {isLoading && <View pointerEvents="none" style={styles.loading_overlay}><ActivityIndicator size="large" color="#FF43BD" /></View>}
       {children}
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  loading_overlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.18)',
+  },
+});
 
 export default VideoBackground;
